@@ -1,0 +1,10 @@
+- name: dummy
+  description: execute dummy steps
+  changes:
+    - dummy: 
+      - foo: bar baz
+      - qux: norfy
+    - shell:
+      - shell: pwd
+      - shell: ls -l
+      - shell: echo $HOME
