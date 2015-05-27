@@ -13,13 +13,8 @@ from cct.module import Module
 logger = logging.getLogger('cct')
 
 class Shell(Module):
-    def run(self, operation):
-        if operation.command == "shell":
-            self._execute_shell(operation.args)
-        else:
-            logger.info("unsuported operation %s with args %s" % (operation.command, operation.args ))
 
-    def _execute_shell(self, command):
+    def shell(self, command):
         logger.debug("executing shell command: %s" % command)
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = process.communicate()

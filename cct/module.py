@@ -84,8 +84,13 @@ class Module(object):
         print environment
         self.environment = environment
 
-    def run(self):
-        pass
+    def run(self, operation):
+        try:
+            logger.debug("invoking command %s", operation.command)
+            method = getattr(self, operation.command)
+            method(operation.args)
+        except:
+            logger.error("%s is not supported by module", operation.command)
                 
 class Operation(object):
     """

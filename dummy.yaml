@@ -8,8 +8,8 @@
       - environment:
         - bar: lbar
         - baz: lbaz
-      - foo: bar baz
-      - qux: norfy
+      - dump: bar baz
+      - dump: norfy
     - shell:
       - shell: pwd
       - shell: ls -l
