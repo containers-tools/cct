@@ -9,7 +9,7 @@ of the BSD license. See the LICENSE file for details.
 import logging
 
 logger = logging.getLogger('cct')
-from cct.module import Operation, ModuleRunner, Module
+from cct.module import Operation, ChangeRunner, Module, Change
 
 class ChangeProcessor(object):
     config = None
@@ -22,17 +22,46 @@ class ChangeProcessor(object):
         for change in self.config:
             self._process_change(change)
 
-    def _process_change(self, change):
-        logger.info("executing change %s" % change['name'])
-        for modules in change['changes']:
+    def _merge_environemnt(self, change_env, module_env):
+        if change_env is None:
+            return module_env
+        if module_env is None:
+            return change_env
+        combined = {}
+        combined.update(change_env)
+        combined.update(module_env)  
+        return combined
+        
+    def _create_env_dict(self, env):
+        env_dict = {}
+        for variable in env:
+            for key, value in variable.items():
+                env_dict[key]=value
+        return env_dict
+
+    def _process_change(self, change_cfg):
+        logger.info("executing change %s" % change_cfg['name'])
+        changes = []
+        if 'environment' not in change_cfg:
+            change_cfg['environment'] = None
+        if 'description' not in change_cfg:
+            change_cfg['description'] = None
+        change = Change(change_cfg['name'], changes, change_cfg['description'],
+                        self._create_env_dict(change_cfg['environment']))
+        for modules in change_cfg['changes']:
+            environment = change.environment
             operations = []
             module = None
-            for name, ops in modules.items():
-                module = Module(name, operations)
+            for module_name, ops in modules.items():
                 for op in ops:
                     for name, args in op.items():
-                        operation = Operation(name, args)
-                        operations.append(operation)
-            runner = ModuleRunner(module)
-            runner.run()
+                        if name == "environment":
+                            environment = self._merge_environemnt(change.environment, self._create_env_dict(args))
+                        else:
+                            operation = Operation(name, args)
+                            operations.append(operation)
+                module = Module(module_name, operations, environment)
+                changes.append(module)
+        runner = ChangeRunner(change)
+        runner.run()
 

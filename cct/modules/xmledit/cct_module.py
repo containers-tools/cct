@@ -22,7 +22,6 @@ class XML(Module):
         else:
             logger.info("unsuported operation %s with args %s" % (operation.command, operation.args ))
 
-
     def add_element(self, args):
         xmlfile = args[0]
         xpath = args[1]

@@ -13,4 +13,4 @@ logger = logging.getLogger('cct')
 
 class Dummy(Module):
     def run(self, operation):
-        logger.info("dummy module performed %s with args %s" % (operation.command, operation.args ))
+        logger.info("dummy module performed %s with args %s and environment: %s" % (operation.command, operation.args, self.environment ))

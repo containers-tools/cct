@@ -1,7 +1,13 @@
 - name: dummy
   description: execute dummy steps
+  environment:
+    - foo: gfoo
+    - bar: gbar
   changes:
-    - dummy: 
+    - dummy:
+      - environment:
+        - bar: lbar
+        - baz: lbaz
       - foo: bar baz
       - qux: norfy
     - shell:

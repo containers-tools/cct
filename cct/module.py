@@ -12,12 +12,17 @@ import os
 
 logger = logging.getLogger('cct')
 
-class Change(object):
-    name = None
-    description = None
-    environment = {}
-    modules = {}
 
+class ChangeRunner(object):
+    change = None
+
+    def __init__(self, change):
+        self.change = change
+
+    def run(self):
+        for module in self.change.changes:
+            runner = ModuleRunner(module)
+            runner.run()
 
 class ModuleRunner(object):
     module = None
@@ -38,7 +43,7 @@ class ModuleRunner(object):
             if module_name == clazz.__module__:
                 # Instantiate class
                 cls = getattr(module, name)
-                self.module.instance = cls(self.module.name, self.module.operations)
+                self.module.instance = cls(self.module.name, self.module.operations, self.module.environment)
          
     def run(self):
         if not self.module.instance:
@@ -54,6 +59,18 @@ class ModuleRunner(object):
                 logger.error("module %s cannot execute %s with args %s" % (self.module.name, operation.command, operation.args))
                 raise
 
+            
+class Change(object):
+    name = None
+    description = None
+    environment = {}
+    modules = {}
+
+    def __init__(self, name, changes, description=None, environment=None):
+        self.name = name
+        self.description = description
+        self.changes = changes
+        self.environment = environment
 
 class Module(object):
     name = None
@@ -61,9 +78,11 @@ class Module(object):
     operations = []
     instance = None
 
-    def __init__(self, name, operations):
+    def __init__(self, name, operations, environment=None):
         self.name = name
         self.operations = operations
+        print environment
+        self.environment = environment
 
     def run(self):
         pass
