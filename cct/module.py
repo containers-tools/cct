@@ -51,6 +51,7 @@ class ModuleRunner(object):
             self.setup()
             logger.debug("created %s" % self.module.instance)
         for operation in self.module.operations:
+            self.module.process_environment(operation)
             #FIXME inject environment
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
@@ -78,11 +79,33 @@ class Module(object):
     operations = []
     instance = None
 
-    def __init__(self, name, operations, environment=None):
+    def __init__(self, name, operations, environment={}):
         self.name = name
         self.operations = operations
         print environment
         self.environment = environment
+
+    def _replace_variables(self, string):
+        result = ""
+        for token in string.split(" "):
+            logger.debug("processing token %s", token)
+            if token.startswith("$"):
+                var_name = token[1:]
+                # set value from environment
+                if os.environ.get(var_name):
+                    logger.info("Using host variable %s" %token)
+                    token = os.environ[var_name]
+                elif self.environment.get(var_name):
+                    logger.info("Using yaml file variable %s" %token)
+                    token = self.environment[var_name]
+            result += token + " "
+        return result
+
+    def process_environment(self, operation):
+        if '$' in operation.command:
+            operation.command = self._replace_variables(operation.command)
+        if '$' in operation.args:
+            operation.args = self._replace_variables(operation.args)
 
     def run(self, operation):
         try:
