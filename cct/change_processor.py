@@ -7,6 +7,7 @@ of the BSD license. See the LICENSE file for details.
 """
 
 import logging
+import shlex
 
 logger = logging.getLogger('cct')
 from cct.module import Operation, ChangeRunner, Module, Change
@@ -34,6 +35,8 @@ class ChangeProcessor(object):
         
     def _create_env_dict(self, env):
         env_dict = {}
+        if env is None:
+            return env_dict
         for variable in env:
             for key, value in variable.items():
                 env_dict[key]=value
@@ -58,7 +61,7 @@ class ChangeProcessor(object):
                         if name == "environment":
                             environment = self._merge_environemnt(change.environment, self._create_env_dict(args))
                         else:
-                            operation = Operation(name, args)
+                            operation = Operation(name, shlex.split(args))
                             operations.append(operation)
                 module = Module(module_name, operations, environment)
                 changes.append(module)

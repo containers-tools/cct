@@ -82,7 +82,6 @@ class Module(object):
     def __init__(self, name, operations, environment={}):
         self.name = name
         self.operations = operations
-        print environment
         self.environment = environment
 
     def _replace_variables(self, string):
@@ -104,8 +103,9 @@ class Module(object):
     def process_environment(self, operation):
         if '$' in operation.command:
             operation.command = self._replace_variables(operation.command)
-        if '$' in operation.args:
-            operation.args = self._replace_variables(operation.args)
+        for i in xrange(len(operation.args)):
+            if '$' in operation.args[i]:
+                operation.args[i] = self._replace_variables(operation.args[i])
 
     def run(self, operation):
         try:
@@ -114,17 +114,19 @@ class Module(object):
             method(operation.args)
         except:
             logger.error("%s is not supported by module", operation.command)
-                
+            
 class Operation(object):
     """
     Object representing single operation
     """
     command = None
-    args = {}
+    args = []
 
     def __init__(self, command, args):
         self.command = command
-        self.args = args
+        self.args=[]
+        for arg in args:
+            self.args.append(arg.rstrip())
 
 
         
