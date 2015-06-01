@@ -1,0 +1,14 @@
+- name: os.amq.exec
+  description: configure amq image for running in openshift
+  changes:
+    - amq:
+      - setup: activemq.xml users.ini
+      - setup_authentication: $AMQ_USER $AMQ_PASSWORD
+      - define_queue: $AMQ_QUEUES
+      - define_topic: $AMQ_TOPIC
+      - update_storage: $AMQ_STORAGE_USAGE_LIMIT
+      - configure_transport: $AMQ_TRANSPORT
+      - update_framesize: $AMQ_FRAME_SIZE
+      - update_max_connections: $AMQ_MAX_CONNECTIONS
+      - update_key_store_pwd: $AMQ_KEYSTORE_PASSWORD
+      - update_trust_store_pwd: $AMQ_TRUSTSTORE_PASSWORD
