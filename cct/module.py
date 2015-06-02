@@ -56,7 +56,7 @@ class ModuleRunner(object):
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
                 self.module.instance.run(operation)
-            except Exception, e:
+            except Exception as e:
                 logger.error("module %s cannot execute %s with args %s" % (self.module.name, operation.command, operation.args))
                 logger.debug(e, exc_info=True)
 
