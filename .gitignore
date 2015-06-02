@@ -1,1 +1,5 @@
 *.py[~co]
+.tox
+*egg-info
+target
+.coverage
