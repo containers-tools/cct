@@ -41,14 +41,17 @@ class CCT_CLI(object):
                 module = Module(module, [operation])
                 runner = ModuleRunner(module)
                 runner.run()
-            if args.method[0] == 'process':
+            elif args.method[0] == 'process':
             #POC Implementation
                 filename = args.method[1]
                 stream = open(filename, 'r')
                 change = yaml.load(stream)
                 cp = ChangeProcessor(change)
                 cp.process()
-
+            else:
+                self.parser.print_help()
+        except IndexError:
+            self.parser.print_help()
         except KeyboardInterrupt:
             pass
         except Exception as ex:
