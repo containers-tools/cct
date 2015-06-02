@@ -110,10 +110,11 @@ class Module(object):
         try:
             logger.debug("invoking command %s", operation.command)
             method = getattr(self, operation.command)
-            method(operation.args)
+            method(*operation.args)
         except:
             logger.error("%s is not supported by module", operation.command)
-            
+            raise
+
 class Operation(object):
     """
     Object representing single operation

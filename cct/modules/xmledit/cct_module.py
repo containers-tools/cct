@@ -17,10 +17,7 @@ logger = logging.getLogger('cct')
 
 class XML(Module):
 
-    def insert_element(self, args):
-        xmlfile = args[0]
-        xpath = args[1]
-        snippet = args[2]
+    def insert_element(self, xmlfile, xpath, snippet):
         add_element(xmlfile, xpath, snippet)
 
         

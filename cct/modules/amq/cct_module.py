@@ -18,14 +18,14 @@ class AMQ(Module):
     activemq_xml = "activemq.xml"
     ini_file = "users.ini"
     
-    def setup(self, args):
-        self.activemq_xml = args[0]
-        self.ini_file = args[1]
+    def setup(self, activemq_xml, ini_file):
+        self.activemq_xml = activemq_xml
+        self.ini_file = ini_file
 
-    def configure_transport(self, args):
+    def configure_transport(self, transport_list):
         transport_template = '<transportConnector name="%s" uri="%s://0.0.0.0:%s?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>'
         transports = []
-        for transport in args[0].split(","):
+        for transport in transport_list.split(","):
             transport = transport.strip()
             if transport == "openwire":
                 transports.append(transport_template % (transport, "tcp", "61616"))
@@ -45,45 +45,38 @@ class AMQ(Module):
                 add_element(self.activemq_xml, ".//*[local-name()='transportConnectors']", transport)
 
        
-    def update_key_store_pwd(self, args):
-        password = args[0]
+    def update_key_store_pwd(self, password):
         update_attrib(self.activemq_xml, ".//*[local-name()='sslContext' and @keyStorePassword]", "keyStorePassword", password)
 
-    def update_trust_store_pwd(self, args):
-        password = args[0]
+    def update_trust_store_pwd(self, password):
         update_attrib(self.activemq_xml, ".//*[local-name()='sslContext' and @trustStorePassword]", "trustStorePassword", password)
 
-    def update_framesize(self, args):
-        max_framesize = args[0]
+    def update_framesize(self, max_framesize):
         update_regex(self.activemq_xml, ".//*[local-name()='transportConnector' and @uri]", "uri", "(wireFormat\\.maxFrameSize=)([0-9]*)", "\g<1>"+max_framesize)
 
-    def update_max_connections(self, args):
-        max_connection = args[0]
+    def update_max_connections(self, max_connection):
         update_regex(self.activemq_xml, ".//*[local-name()='transportConnector' and @uri]", "uri",  "(maximumConnections=)([0-9]*)", "\g<1>"+max_connection)
 
-    def update_storage(self, args):
-        limit = args[0]
+    def update_storage(self, limit):
         update_attrib(self.activemq_xml, ".//*[local-name()='storeUsage' and @limit]", "limit", limit)
 
-    def define_queue(self, args):
+    def define_queue(self, queues):
         if not does_element_exists(self.activemq_xml, ".//*[local-name()='destinations']"):
             add_element(self.activemq_xml, ".//*[local-name()='broker']", "<destinations></destinations>")
 
-        for q_name in args[0].split(","):
+        for q_name in queues.split(","):
             queue = ('<queue physicalName="%s"/>' % q_name)
             add_element(self.activemq_xml, ".//*[local-name()='destinations']", queue)
             
-    def define_topic(self, args):
+    def define_topic(self, topics):
         if not does_element_exists(self.activemq_xml, ".//*[local-name()='destinations']"):
             add_element(self.activemq_xml, ".//*[local-name()='broker']", "<destinations></destinations>")
 
-        for t_name in args[0].split(","):
+        for t_name in topics.split(","):
             topic = ('<topic physicalName="%s"/>' % t_name)
             add_element(self.activemq_xml, ".//*[local-name()='destinations']", topic)
             
-    def setup_authentication(self, args):
-        username = args[0]
-        password = args[1]
+    def setup_authentication(self, username, password):
         user_ini_file='''#################################################################################
 #
 #    Licensed to the Apache Software Foundation (ASF) under one or more
