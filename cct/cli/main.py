@@ -11,7 +11,8 @@ import logging
 import yaml
 import sys
 
-from cct import setup_logging
+
+from cct import setup_logging, version
 from cct.module import Modules
 from cct.change_processor import ChangeProcessor
 logger = logging.getLogger('cct')
@@ -34,6 +35,7 @@ class CCT_CLI(object):
         self.parser.add_argument('files', help='YAML files to process', nargs="*")
         self.parser.add_argument('-l', '--list', help='list all modules', action="store_true")
         self.parser.add_argument('-s', '--show', help='show module usage')
+        self.parser.add_argument('--version', action='version', help="show version", version=version.version)
 
     def run(self):
         self.setup_arguments()
