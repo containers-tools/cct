@@ -97,7 +97,7 @@ class AMQ(Module):
         Configures topics.
         """
         if not topics:
-            raise CCTError, "No topic names provided, we cannot proceed with setting up AMQ topics without it"
+            raise CCTError("No topic names provided, we cannot proceed with setting up AMQ topics without it")
 
         if not does_element_exists(self.activemq_xml, ".//*[local-name()='destinations']"):
             add_element(
@@ -124,7 +124,7 @@ class AMQ(Module):
         self.logger.debug("Configuring authentication...")
 
         if not (username and password):
-            raise CCTError, "Username or password not provided, we cannot proceed with setting up AMQ authentication without it"
+            raise CCTError("Username or password not provided, we cannot proceed with setting up AMQ authentication without it")
 
         username = username.strip()
         password = password.strip()
