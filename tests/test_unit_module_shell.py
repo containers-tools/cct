@@ -20,7 +20,7 @@ class TestShellModule(unittest.TestCase):
 
         ex = cm.exception
 
-        self.assertEqual(ex.message, "Command 'doesnt exist' failed")
+        self.assertEqual(str(ex), "Command 'doesnt exist' failed")
 
 if __name__ == '__main__':
     unittest.main()
