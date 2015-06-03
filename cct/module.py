@@ -16,6 +16,7 @@ logger = logging.getLogger('cct')
 
 class ChangeRunner(object):
     change = None
+    results = []
 
     def __init__(self, change):
         self.change = change
@@ -23,13 +24,28 @@ class ChangeRunner(object):
     def run(self):
         for module in self.change.changes:
             runner = ModuleRunner(module)
-            runner.run()
+            try:
+                runner.run()
+                logger.info("module %s succesfully processed all steps" %module.name)
+                self.results.append(module)
+            except:
+                logger.error("module %s failed processing steps" %module.name)
+                self.results.append(module)
+                raise
+
+    def print_result_report(self):
+        for module in self.results:
+            print("Processed module: %s" %module.name)
+            for operation in module.operations:
+                print("  %-30s: %s" % (operation.command, operation.state))
 
 class ModuleRunner(object):
     module = None
+    state = "NotRun"
 
     def __init__(self, module):
         self.module = module
+        self.state = "Processing"
 
     def setup(self):
         #FIXME look through all .py files in that dir and take one which inherits correct interface
@@ -57,9 +73,13 @@ class ModuleRunner(object):
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
                 self.module.instance.run(operation)
+                self.state = "Passed"
             except Exception as e:
+                self.state = "Error"
                 logger.error("module %s cannot execute %s with args %s" % (self.module.name, operation.command, operation.args))
                 logger.debug(e, exc_info=True)
+                raise e
+        self.state = "Passed"
 
 class Change(object):
     name = None
@@ -78,6 +98,7 @@ class Module(object):
     environment = {}
     operations = []
     instance = None
+    state = "NotRun"
 
     def __init__(self, name, operations, environment={}):
         self.name = name
@@ -114,8 +135,12 @@ class Module(object):
             logger.debug("invoking command %s", operation.command)
             method = getattr(self, operation.command)
             method(*operation.args)
+            logger.debug("operaton '%s' Passed" %operation.command)
+            operation.state = "Passed"
         except:
             logger.error("%s is not supported by module", operation.command)
+            operation.state = "Error"
+            self.state = "Error"
             raise
 
 class Operation(object):
@@ -124,6 +149,7 @@ class Operation(object):
     """
     command = None
     args = []
+    state = "NotRun"
 
     def __init__(self, command, args):
         self.command = command
