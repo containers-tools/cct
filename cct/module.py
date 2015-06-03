@@ -145,7 +145,11 @@ class Modules(object):
     def list_module_oper(name):
         module = Module(name, None)
         module_runner = ModuleRunner(module)
-        module_runner.setup()
+        try:
+            module_runner.setup()
+        except:
+            print("Module %s cannot be found!" %name)
+            return
         print("Module %s contains commands: " % name)
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
