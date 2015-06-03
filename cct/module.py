@@ -82,6 +82,8 @@ class Module(object):
         self.name = name
         self.operations = operations
         self.environment = environment
+        # TODO: we need to do it properly
+        self.logger = logger
 
     def _replace_variables(self, string):
         result = ""

@@ -12,6 +12,6 @@ from cct.module import Module
 logger = logging.getLogger('cct')
 
 class Dummy(Module):
-    def dump(self, args):
+    def dump(self, *args):
         logger.info("dummy module performed dump with args %s and environment: %s" % (args, self.environment ))
 

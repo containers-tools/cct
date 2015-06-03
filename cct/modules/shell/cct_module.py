@@ -3,25 +3,31 @@ Copyright (c) 2015 Red Hat, Inc
 All rights reserved.
 
 This software may be modified and distributed under the terms
-of the BSD license. See the LICENSE file for details.
+of the MIT license. See the LICENSE file for details.
 """
 
-import logging
 import subprocess
 
+from cct.errors import CCTError
 from cct.module import Module
-logger = logging.getLogger('cct')
 
 class Shell(Module):
 
-    def shell(self, command):
-        logger.debug("executing shell command: %s" % command)
+    def shell(self, *command):
+        self.logger.debug("Executing shell command: '%s'" % " ".join(command))
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = process.communicate()
-        
+        retcode = process.wait()
+
         if stdout:
-            logger.debug("command stdout: %s", stdout)
+            self.logger.debug("Captured stdout: %s" % stdout)
         if stderr:
-            logger.error("command stderr: %s", stderr)
+            self.logger.error("Captured stderr: %s" % stderr)
+
+        if retcode == 0:
+            self.logger.debug("Command '%s' executed successfully" % " ".join(command))
+        else:
+            raise CCTError, "Command '%s' failed" % " ".join(command)
+
         
         

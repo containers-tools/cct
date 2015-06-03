@@ -3,3 +3,4 @@
 *egg-info
 target
 .coverage
+*.swp
