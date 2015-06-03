@@ -9,6 +9,8 @@ of the BSD license. See the LICENSE file for details.
 import argparse
 import logging
 import yaml
+import os
+import shlex
 import sys
 
 
@@ -24,7 +26,6 @@ class MyParser(argparse.ArgumentParser):
         sys.stderr.write('\nError: %s\n' % message)
         sys.exit(2)
 
-
 class CCT_CLI(object):
     def __init__(self):
         self.parser = MyParser(description='Container configuration tool')
@@ -32,10 +33,16 @@ class CCT_CLI(object):
     def setup_arguments(self):
         self.parser.add_argument('-v', '--verbose', action="store_true", help='verbose output')
         self.parser.add_argument('-q', '--quiet', action="store_true", help='set quiet output')
-        self.parser.add_argument('files', help='YAML files to process', nargs="*")
+        self.parser.add_argument('files', help='YAML files to process', nargs="+")
         self.parser.add_argument('-l', '--list', help='list all modules', action="store_true")
         self.parser.add_argument('-s', '--show', help='show module usage')
+        self.parser.add_argument('-c', '--command', help="exec this command after processing changes")
         self.parser.add_argument('--version', action='version', help="show version", version=version.version)
+
+    def exec_command(self, command):
+        command = shlex.split(command)
+        logger.info("executing command %s with args %s" %(command[0], " ".join(command[1:])))
+        os.execvp(command[0], command[1:])
 
     def run(self):
         self.setup_arguments()
@@ -57,6 +64,8 @@ class CCT_CLI(object):
                     change = yaml.load(stream)
                     cp = ChangeProcessor(change)
                     cp.process()
+                    if args.command:
+                        self.exec_command(args.command)
             except KeyboardInterrupt:
                 pass
             except Exception as ex:
@@ -64,8 +73,6 @@ class CCT_CLI(object):
                     raise
                 else:
                     logger.error("Exception caught: %s", repr(ex))
-        else:
-             self.parser.print_help()
     
 if __name__ == '__main__':
     cli=CCT_CLI()
