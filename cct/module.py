@@ -9,6 +9,7 @@ import imp
 import inspect
 import logging
 import os
+import string
 
 logger = logging.getLogger('cct')
 
@@ -130,6 +131,23 @@ class Operation(object):
         for arg in args:
             self.args.append(arg.rstrip())
 
+class Modules(object):
+    @staticmethod
+    def list():
+        # FIXME - for now list only module directories - we need to create a way to register modules better
+        directory = os.path.join(os.path.dirname(__file__), 'modules')
+        print("available cct modules:")
+        for module in os.listdir(directory):
+            if os.path.isdir(directory + "/" + module):
+                print("  %s" %module)
 
-        
-    
+    @staticmethod
+    def list_module_oper(name):
+        module = Module(name, None)
+        module_runner = ModuleRunner(module)
+        module_runner.setup()
+        print("Module %s contains commands: " % name)
+        for method in dir(module.instance):
+            if callable(getattr(module.instance, method)):
+                if method[0] in string.ascii_lowercase and method != "run":
+                    print("  %s: " %method)
