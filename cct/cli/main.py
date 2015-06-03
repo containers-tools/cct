@@ -47,6 +47,13 @@ class CCT_CLI(object):
             logger.info("executing command %s" %command[0])
         os.execvp(command[0], command)
 
+    def process_files(self, files):
+        for yaml_file in files:
+            stream = open(yaml_file, 'r')
+            change = yaml.load(stream)
+            cp = ChangeProcessor(change)
+            cp.process()
+
     def run(self):
         self.setup_arguments()
         args = self.parser.parse_args()
@@ -62,13 +69,9 @@ class CCT_CLI(object):
             Modules.list_module_oper(args.show)
         elif args.files:
             try:
-                for yaml_file in args.files:
-                    stream = open(yaml_file, 'r')
-                    change = yaml.load(stream)
-                    cp = ChangeProcessor(change)
-                    cp.process()
-                    if args.command:
-                        self.exec_command(args.command)
+                self.process_files(args.files)
+                if args.command:
+                    self.exec_command(args.command)
             except KeyboardInterrupt:
                 pass
             except Exception as ex:
