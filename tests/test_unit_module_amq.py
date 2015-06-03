@@ -1,5 +1,6 @@
 import unittest
 import mock
+import six
 
 from cct.modules.amq.cct_module import AMQ
 from cct.errors import CCTError
@@ -15,7 +16,7 @@ class TestAMQModule:
         @mock.patch('cct.modules.amq.cct_module.add_element')
         def test_should_setup_authentication(self, mock_add_element):
             m = mock.mock_open()
-            with mock.patch("__builtin__.open", m, create=True):
+            with mock.patch.object(six.moves.builtins, 'open', m, create=True):
                 self.amq.setup_authentication('user', 'pass')
 
             m.assert_called_once_with('users.ini', 'w')

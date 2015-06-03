@@ -30,4 +30,4 @@ class Shell(Module):
             self.logger.debug(
                 "Command '%s' executed successfully" % " ".join(command))
         else:
-            raise CCTError, "Command '%s' failed" % " ".join(command)
+            raise CCTError("Command '%s' failed" % " ".join(command))
