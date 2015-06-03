@@ -1,0 +1,17 @@
+general:
+  artifacts:
+    - "target"
+
+machine:
+  python:
+  services:
+    - docker
+
+dependencies:
+  post:
+    - docker version
+    - docker info
+
+test:
+  override:
+    - make test
