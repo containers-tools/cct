@@ -1,4 +1,3 @@
-import xml.etree.ElementTree as ET
 import re
 from lxml import etree
 
