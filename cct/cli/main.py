@@ -13,7 +13,6 @@ import sys
 
 from cct import setup_logging
 from cct.change_processor import ChangeProcessor
-from cct.module import Operation, ModuleRunner, Module
 logger = logging.getLogger('cct')
 
 class MyParser(argparse.ArgumentParser):
