@@ -41,8 +41,11 @@ class CCT_CLI(object):
 
     def exec_command(self, command):
         command = shlex.split(command)
-        logger.info("executing command %s with args %s" %(command[0], " ".join(command[1:])))
-        os.execvp(command[0], command[1:])
+        if command[1:]:
+            logger.info("executing command %s with args %s" %(command[0], " ".join(command[1:])))
+        else:
+            logger.info("executing command %s" %command[0])
+        os.execvp(command[0], command)
 
     def run(self):
         self.setup_arguments()
