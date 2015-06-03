@@ -139,7 +139,8 @@ class Modules(object):
         print("available cct modules:")
         for module in os.listdir(directory):
             if os.path.isdir(directory + "/" + module):
-                print("  %s" %module)
+                if os.path.isfile(directory + "/" + module + "/cct_module.py"):
+                    print("  %s" %module)
 
     @staticmethod
     def list_module_oper(name):
