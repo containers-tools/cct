@@ -11,6 +11,7 @@ from cct.lib.xmlutils import add_element, does_element_exists, update_attrib, up
 from cct.module import Module
 from cct.errors import CCTError
 
+
 class AMQ(Module):
     activemq_xml = "activemq.xml"
     ini_file = "users.ini"
@@ -92,20 +93,36 @@ class AMQ(Module):
                 self.activemq_xml, ".//*[local-name()='destinations']", queue)
 
     def define_topic(self, topics):
+        """
+        Configures topics.
+        """
+        if not topics:
+            raise CCTError, "No topic names provided, we cannot proceed with setting up AMQ topics without it"
+
         if not does_element_exists(self.activemq_xml, ".//*[local-name()='destinations']"):
             add_element(
                 self.activemq_xml, ".//*[local-name()='broker']", "<destinations></destinations>")
 
         for name in topics.split(","):
             name = name.strip()
+            topic = '<topic physicalName="%s"/>' % name
+
+            # Add the element only if it does not exist
+            if does_element_exists(self.activemq_xml, ".//*[local-name()='destinations']/*[local-name()='topic' and @physicalName='%s']" % name):
+                self.logger.info("Topic '%s' already exists..." % name)
+                return
+
             self.logger.info("Adding '%s' topic..." % name)
-            topic = ('<topic physicalName="%s"/>' % name)
             add_element(
                 self.activemq_xml, ".//*[local-name()='destinations']", topic)
 
     def setup_authentication(self, username, password):
+        """
+        Configures authentication for AMQ. Adds a user with spefied password and
+        enables the jaas authentication.
+        """
         self.logger.debug("Configuring authentication...")
-        
+
         if not (username and password):
             raise CCTError, "Username or password not provided, we cannot proceed with setting up AMQ authentication without it"
 
@@ -120,4 +137,3 @@ class AMQ(Module):
                     '<jaasAuthenticationPlugin configuration="activemq"/>')
 
         self.logger.debug("Authentication configured")
-
