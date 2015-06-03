@@ -66,5 +66,10 @@ class ChangeProcessor(object):
                 module = Module(module_name, operations, environment)
                 changes.append(module)
         runner = ChangeRunner(change)
-        runner.run()
+        try:
+            runner.run()
+        except:
+            raise
+        finally:
+            runner.print_result_report()
 
