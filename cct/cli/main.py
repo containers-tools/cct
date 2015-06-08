@@ -79,7 +79,10 @@ class CCT_CLI(object):
                     raise
                 else:
                     logger.error("Exception caught: %s", repr(ex))
-    
-if __name__ == '__main__':
+
+def run():
     cli=CCT_CLI()
     cli.run()
+
+if __name__ == '__main__':
+    run()
