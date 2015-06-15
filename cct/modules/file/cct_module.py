@@ -9,14 +9,9 @@ import os
 import shutil
 
 from cct.module import Module
-
+from cct.lib.file_utils import create_dir
 
 class File(Module):
-
-    def create_dir(self, path):
-        if os.path.dirname(path):
-            if not os.path.exists(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
 
     def copy(self, source, destination):
         self.create_dir(destination)
@@ -29,3 +24,6 @@ class File(Module):
     def move(self, source, destination):
         self.create_dir(destination)
         shutil.move(source, destination)
+
+    def remove(self, path):
+        shutil.rmtree(path)
