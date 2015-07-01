@@ -1,0 +1,8 @@
+- name: samples.jboss_cli
+  description: execute samples jboss_cli steps
+  changes:
+    - jboss_cli:
+      # set jboss home
+      - setup: /home/dbecvari/opt/wildfly-8.2.0.Final
+      - run_cli: data-source remove --name=ExampleDS
+      - run_cli: ls

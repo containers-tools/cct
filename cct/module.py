@@ -61,7 +61,7 @@ class ModuleRunner(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 self.module.instance = cls(self.module.name, self.module.operations, self.module.environment)
-         
+
     def run(self):
         if not self.module.instance:
             logger.debug("Runner has no module instace, creating one")
@@ -79,6 +79,7 @@ class ModuleRunner(object):
                 logger.error("module %s cannot execute %s with args %s" % (self.module.name, operation.command, operation.args))
                 logger.debug(e, exc_info=True)
                 raise e
+        self.module.instance.teardown()
         self.state = "Passed"
 
 class Change(object):
@@ -122,6 +123,12 @@ class Module(object):
                     token = self.environment[var_name]
             result += token + " "
         return result
+
+    def setup(self):
+        pass
+
+    def teardown(self):
+        pass
 
     def process_environment(self, operation):
         if '$' in operation.command:

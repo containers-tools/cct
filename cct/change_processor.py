@@ -14,7 +14,7 @@ from cct.module import Operation, ChangeRunner, Module, Change
 
 class ChangeProcessor(object):
     config = None
-    
+
     def __init__(self, config):
         self.config = config
 
@@ -30,9 +30,9 @@ class ChangeProcessor(object):
             return change_env
         combined = {}
         combined.update(change_env)
-        combined.update(module_env)  
+        combined.update(module_env)
         return combined
-        
+
     def _create_env_dict(self, env):
         env_dict = {}
         if env is None:
@@ -72,4 +72,3 @@ class ChangeProcessor(object):
             raise
         finally:
             runner.print_result_report()
-

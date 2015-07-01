@@ -14,7 +14,7 @@ def add_element(xmlfile, xpath, snippet):
     for element in result:
         element.append(xmlsnippet)
     _writexml(xmlfile, tree)
-        
+
 def does_element_exists(xmlfile, xpath):
     tree = etree.parse(xmlfile)
     root = tree.getroot()
@@ -28,7 +28,7 @@ def update_attrib(xmlfile, xpath, attrib,  value):
     for element in root.xpath(xpath):
         element.set(attrib, value)
     _writexml(xmlfile, tree)
-        
+
 def update_regex(xmlfile, xpath, attrib, pattern, value):
     tree = etree.parse(xmlfile)
     root = tree.getroot()

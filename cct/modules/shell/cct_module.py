@@ -13,11 +13,20 @@ from cct.module import Module
 
 
 class Shell(Module):
+    env = {}
+
+    def set_env(self, *environ):
+        for env in environ:
+            self.logger.debug("processing variable %s" %env)
+            key,value = env.split('=',1)
+            self.env[key] = value
+        self.logger.debug("set environ %s" %self.env)
 
     def shell(self, *command):
         self.logger.debug("Executing shell command: '%s'" % " ".join(command))
         process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            " ".join(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env=self.env, shell=True)
         stdout, stderr = process.communicate()
         retcode = process.wait()
 
