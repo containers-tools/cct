@@ -1,7 +1,6 @@
 import re
 from lxml import etree
 
-
 def _writexml(xmlfile, tree):
     with open(xmlfile, "w") as openfile:
         tree.write(openfile)
