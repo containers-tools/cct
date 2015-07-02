@@ -70,6 +70,11 @@ class CCT_CLI(object):
 
     def run(self):
         self.setup_arguments()
+        env_changes=None
+        try:
+            env_changes = os.environ['CCT_CHANGES']
+        except KeyError:
+            pass
         args = self.parser.parse_args()
         if args.verbose:
             setup_logging(level=logging.DEBUG)
@@ -81,9 +86,17 @@ class CCT_CLI(object):
             Modules.list()
         elif args.show:
             Modules.list_module_oper(args.show)
-        elif args.changes:
+        elif args.changes or env_changes:
+            changes = []
+            ## env changes overides cmdline ones
+            ## seems odd but really needed for containers - changes are passed
+            ## via docker run -e
+            if env_changes:
+                changes += env_changes.split()
+            else:
+                changes += args.changes
             try:
-                self.process_changes(args.changes)
+                self.process_changes(changes)
             except KeyboardInterrupt:
                 pass
             except Exception as ex:
