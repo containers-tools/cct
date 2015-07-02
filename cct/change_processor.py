@@ -58,10 +58,14 @@ class ChangeProcessor(object):
             for module_name, ops in modules.items():
                 for op in ops:
                     for name, args in op.items():
+                        logger.debug(name)
                         if name == "environment":
                             environment = self._merge_environemnt(change.environment, self._create_env_dict(args))
                         else:
-                            operation = Operation(name, shlex.split(args))
+                            if args:
+                                operation = Operation(name, shlex.split(args))
+                            else:
+                                operation = Operation(name, None)
                             operations.append(operation)
                 module = Module(module_name, operations, environment)
                 changes.append(module)

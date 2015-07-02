@@ -161,8 +161,9 @@ class Operation(object):
     def __init__(self, command, args):
         self.command = command
         self.args=[]
-        for arg in args:
-            self.args.append(arg.rstrip())
+        if args:
+            for arg in args:
+                self.args.append(arg.rstrip())
 
 class Modules(object):
     @staticmethod

@@ -9,18 +9,26 @@ import logging
 from cct.errors import CCTError
 from cct.module import Module
 from subprocess import PIPE, Popen
-
+import os
 logger = logging.getLogger('cct')
 
 class jboss_cli(Module):
-    jboss_home = '/opt/eap'
+    jboss_home = None
     jboss_process = None
     jboss_cli_runner = None
 
-    def setup(self, jboss_home='/opt/eap/'):
-        self.jboss_home = jboss_home
-        logger.debug('launching standalone jboss: "%s"' % (jboss_home + "/bin/standalone.sh"))
-        self.jboss_process = Popen(jboss_home + "/bin/standalone.sh", stdout=PIPE, stdin=PIPE)
+    def setup(self, jboss_home=None):
+        logger.debug("got jboss home %s" %jboss_home)
+        if jboss_home:
+            self.jboss_home = jboss_home
+        else:
+            try:
+                self.jboss_home = os.environ['JBOSS_HOME']
+            except:
+                logger.error("Cannot determine JBOSS_HOME location")
+                raise CCTError('Cannot determine JBOSS_HOME location')
+        logger.debug('launching standalone jboss: "%s"' % (self.jboss_home + "/bin/standalone.sh"))
+        self.jboss_process = Popen(self.jboss_home + "/bin/standalone.sh", stdout=PIPE, stdin=PIPE)
 
     def _run_jboss_cli(self, command):
         logger.debug('launching cli: "%s"' % (self.jboss_home + "/bin/jboss-cli.sh"))
