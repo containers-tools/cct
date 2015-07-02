@@ -3,6 +3,6 @@
   changes:
     - jboss_cli:
       # set jboss home
-      - setup: /home/dbecvari/opt/wildfly-8.2.0.Final
+      - setup: $JBOSS_HOME
       - run_cli: data-source remove --name=ExampleDS
       - run_cli: ls
