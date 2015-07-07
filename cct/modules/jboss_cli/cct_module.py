@@ -68,10 +68,10 @@ class jboss_cli(Module):
     def teardown(self):
         if self.jboss_process:
             logger.debug("Stopping application server.")
-            self.jboss_process.send_signal(15)
+            self._run_jboss_cli("shutdown")
             start = time()
-            while jboss_process.poll() is None or time() > start + self.jboss_timeout:
+            while self.jboss_process.poll() is None or time() > start + self.jboss_timeout :
                 sleep(5)
                 logger.debug("Waiting for application server to stop.")
-            self.jboss_process.send_signal(9)
-            raise CCTError("Cannot stop application server.")
+            if self.jboss_process.poll():
+                raise CCTError("Cannot stop application server.")
