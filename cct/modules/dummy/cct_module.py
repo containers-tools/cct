@@ -13,5 +13,10 @@ logger = logging.getLogger('cct')
 
 class Dummy(Module):
     def dump(self, *args):
-        logger.info("dummy module performed dump with args %s and environment: %s" % (args, self.environment ))
+        """
+        Dumps arguments to a logfile.
 
+        Args:
+         *args: Will be dumped :).
+        """
+        logger.info("dummy module performed dump with args %s and environment: %s" % (args, self.environment ))

@@ -20,6 +20,13 @@ class jboss_cli(Module):
     jboss_cli_runner = None
 
     def setup(self, jboss_home=None, jboss_timeout=120):
+        """
+        Setups jboss-cli module.
+
+        Args:
+            jboss_home: A path to a jboss installation. If not specified its taken from JBOSS_HOME env varibale.
+            jboss_timeout: jboss-cli utility needs running JBoss AS instance. This set timetout (in seconds) for how long we wait for JBoss AS to start or exit. Default value is 120 seconds.
+        """
         self.jboss_timeout = jboss_timeout
         logger.debug("Got jboss home '%s'." %jboss_home)
         if jboss_home:
@@ -62,6 +69,12 @@ class jboss_cli(Module):
         logger.debug("command '%s' returned: %s" %(command, line))
 
     def run_cli(self, *command):
+        """
+        Runs any given jboss-cli command.
+
+        Args:
+            command: command to run
+        """
         logger.debug(command)
         self._run_jboss_cli(' '.join(command))
 

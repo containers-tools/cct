@@ -186,7 +186,14 @@ class Modules(object):
             print("Module %s cannot be found!" %name)
             return
         print("Module %s contains commands: " % name)
+
+        if getattr(module.instance, "setup").__doc__:
+            print("  setup: %s " %getattr(module.instance, "setup").__doc__)
+
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
-                if method[0] in string.ascii_lowercase and method != "run":
+                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'teardown']:
                     print("  %s: %s" %(method, getattr(module.instance, method).__doc__))
+
+        if getattr(module.instance, "teardown").__doc__:
+            print("  teardown: %s " %getattr(module.instance, "teardown").__doc__)
