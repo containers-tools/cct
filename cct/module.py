@@ -68,7 +68,7 @@ class ModuleRunner(object):
             self.setup()
             logger.debug("created %s" % self.module.instance)
         for operation in self.module.operations:
-            self.module.process_environment(operation)
+            self.module._process_environment(operation)
             #FIXME inject environment
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
@@ -130,7 +130,7 @@ class Module(object):
     def teardown(self):
         pass
 
-    def process_environment(self, operation):
+    def _process_environment(self, operation):
         if '$' in operation.command:
             operation.command = self._replace_variables(operation.command)
         for i in xrange(len(operation.args)):
