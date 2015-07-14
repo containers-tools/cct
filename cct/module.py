@@ -189,4 +189,4 @@ class Modules(object):
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
                 if method[0] in string.ascii_lowercase and method != "run":
-                    print("  %s: " %method)
+                    print("  %s: %s" %(method, getattr(module.instance, method).__doc__))

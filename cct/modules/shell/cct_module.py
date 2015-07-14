@@ -16,6 +16,9 @@ class Shell(Module):
     env = {}
 
     def set_env(self, *environ):
+        """
+        Sets envrionment variables for shell commands in a form of ENV=value
+        """
         for env in environ:
             self.logger.debug("processing variable %s" %env)
             key,value = env.split('=',1)
@@ -23,6 +26,9 @@ class Shell(Module):
         self.logger.debug("set environ %s" %self.env)
 
     def shell(self, *command):
+        """
+        Runs given comman in a shell
+        """
         self.logger.debug("Executing shell command: '%s'" % " ".join(command))
         process = subprocess.Popen(
             " ".join(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
