@@ -11,14 +11,18 @@ import sys
 import xml.etree.ElementTree as ET
 
 from lxml import etree
-from cct.lib.xmlutils import add_element
+from cct.lib.xmlutils import XMLEdit
 from cct.module import Module
 logger = logging.getLogger('cct')
 
 class XML(Module):
+    xmledit = None
 
-    def insert_element(self, xmlfile, xpath, snippet):
-        add_element(xmlfile, xpath, snippet)
+    def setup(self, xmlfile, *namespaces):
+        self.xmledit = XMLEdit(xmlfile, namespaces)
 
-        
+    def insert(self, xpath, snippet):
+        self.xmledit.add_element(xpath, snippet)
 
+
+    
