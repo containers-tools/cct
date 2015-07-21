@@ -141,7 +141,7 @@ class Module(object):
         try:
             logger.debug("invoking command %s", operation.command)
             method = getattr(self, operation.command)
-            method(*operation.args)
+            method(*operation.args, **operation.kwargs)
             logger.debug("operaton '%s' Passed" %operation.command)
             operation.state = "Passed"
         except:
@@ -161,9 +161,14 @@ class Operation(object):
     def __init__(self, command, args):
         self.command = command
         self.args=[]
+        self.kwargs = {}
         if args:
             for arg in args:
-                self.args.append(arg.rstrip())
+                if '=' in arg:
+                    key, value = arg.split('=', 1)
+                    self.kwargs[key] = value
+                else:
+                    self.args.append(arg.rstrip())
 
 class Modules(object):
     @staticmethod
