@@ -68,9 +68,21 @@ class JBossCliModule(Module):
 
 
     def run_cli_batch(self, *command):
+        """
+        Runs any jboss comamnd in a batch.
+
+        Args:
+            command: jboss commands to run.
+        """
         self._run_jboss_cli("batch \n%s\nrun-batch" %' '.join(command))
 
     def run_cli(self, *command):
+        """
+        Runs any jboss comamnd.
+
+        Args:
+            command: jboss commands to run.
+        """
         logger.debug(command)
         self._run_jboss_cli(' '.join(command))
 
