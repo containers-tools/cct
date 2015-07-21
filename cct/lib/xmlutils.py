@@ -23,7 +23,7 @@ class XMLEdit(object):
                 self.namespaces["ns"] =v
 
     def _writexml(self):
-        with open(self.xmlfile, "w") as openfil
+        with open(self.xmlfile, "w") as openfile:
             self.tree.write(openfile)
 
     def add_element(self, xpath, snippet):
