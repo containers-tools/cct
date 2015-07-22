@@ -141,7 +141,20 @@ class Module(object):
         try:
             logger.debug("invoking command %s", operation.command)
             method = getattr(self, operation.command)
-            method(*operation.args, **operation.kwargs)
+            method_params = inspect.getargspec(method)
+            args = []
+            kwargs = {}
+            print operation.args
+            for arg in operation.args:
+                if '=' in arg:
+                    key, value = arg.split('=',1)
+                    if key in method_params.args:
+                        kwargs[key]=value
+                    else:
+                        args.append(arg.strip())
+                else:
+                    args.append(arg.strip())
+            method(*args, **kwargs)
             logger.debug("operaton '%s' Passed" %operation.command)
             operation.state = "Passed"
         except:
@@ -161,14 +174,9 @@ class Operation(object):
     def __init__(self, command, args):
         self.command = command
         self.args=[]
-        self.kwargs = {}
         if args:
             for arg in args:
-                if '=' in arg:
-                    key, value = arg.split('=', 1)
-                    self.kwargs[key] = value
-                else:
-                    self.args.append(arg.rstrip())
+                self.args.append(arg.rstrip())
 
 class Modules(object):
     @staticmethod
