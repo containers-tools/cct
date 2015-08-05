@@ -1,0 +1,8 @@
+- name: samples.jboss.config
+  description: clone repository with standalone.xml and use it for wildky
+  changes:
+    - git:
+      - checkout: https://github.com/l-d-j/cct-config-files path=cct-config-files
+    - file:
+      - move: /opt/jboss/wildfly/standalone/configuration/standalone.xml /opt/jboss/wildfly/standalone/configuration/standalone.xml.bkp
+      - move: cct-config-files/wildfly/8/standalone.xml /opt/jboss/wildfly/standalone/configuration/standalone.xml
