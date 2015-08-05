@@ -2,7 +2,6 @@
   description: execute samples jboss_cli steps
   changes:
     - jboss_cli:
-      # set jboss home
+      # set jboss home - uses $JBOSS_HOME by default
       - setup:
       - run_cli: data-source remove --name=ExampleDS
-      - run_cli: ls

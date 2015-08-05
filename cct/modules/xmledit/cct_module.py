@@ -18,7 +18,7 @@ logger = logging.getLogger('cct')
 class XML(Module):
     xmledit = None
 
-    def setup(self, xmlfile, *namespaces):
+    def setup(self, xmlfile, namespaces):
         """
         setups xmledit module
 
@@ -47,29 +47,29 @@ class XML(Module):
         """
         self.xmledit.delete_element(xpath)
 
-    def replace_attribute(self, xpath, attrib, value):
+    def replace_attribute(self, xpath, attribute, value):
         """
         replaces/defines an attribute in element by defined value
 
         Args:
             xpath: xpath to locate element for attribute update
-            attrib: name of attribute to define/replace
+            attribute: name of attribute to define/replace
             value: value for attribute
         """
-        self.xmledit.update_attrib(xpath, attrib, value)
+        self.xmledit.update_attrib(xpath, attribute, value)
 
-    def replace_attribute_regex(self, xpath, attrib, pattern, value):
+    def replace_attribute_regex(self, xpath, attribute, pattern, value):
         """
         updates attribute with regex pattern/value combo
 
         Args:
             xpath: xpath to locate element for attribute update
-            attrib: name of attribute to define/replace
+            attribute: name of attribute to define/replace
             pattern: pattern to locate part of the attribute value to replace
             value: value for regex
         """
 
-        self.xmledit.update_regex(xpath, attrib, pattern, value)
+        self.xmledit.update_regex(xpath, attribute, pattern, value)
 
     def exist(self, xpath):
         """

@@ -11,7 +11,9 @@ class XMLEdit(object):
         self.tree = etree.parse(xmlfile)
         self.root = self.tree.getroot()
         if namespaces:
-            self.namespaces = namespaces
+            for namespace in namespaces.split('|'):
+                name, value = namespace.split(':',1)
+                self.namespaces[name] = value
         else:
             self._getnamespaces()
 
@@ -39,8 +41,9 @@ class XMLEdit(object):
         return False
 
     def update_attrib(self, xpath, attrib,  value):
+        print  self.root.xpath(xpath, namespaces=self.namespaces)
         for element in self.root.xpath(xpath, namespaces=self.namespaces):
-            element.set(attrib, value)
+            element.attrib[attrib] = value
         self._writexml()
 
     def update_regex(self, xpath, attrib, pattern, value):
