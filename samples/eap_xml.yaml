@@ -1,0 +1,11 @@
+- name: samples.jboss_cli
+  description: execute samples jboss_cli steps
+  changes:
+    - file:
+        - copy: standalone.xml standalone-openshift.xml
+        - copy: source=standalone.xml destination=standalone2.xml
+    - xmledit:
+      - setup: standalone-openshift.xml
+      - insert: >
+          xpath=/ns:server/ns:extensions
+          snippet='<extension module="org.jboss.ctt.dummy" />'
