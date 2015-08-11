@@ -38,6 +38,7 @@ class CCT_CLI(object):
         self.parser.add_argument('-l', '--list', help='list all modules', action="store_true")
         self.parser.add_argument('-s', '--show', help='show module usage')
         self.parser.add_argument('-c', '--command', help="exec this command after processing changes")
+        self.parser.add_argument('-g', '--get-changes', help="download a list of changes from url")
         self.parser.add_argument('--version', action='version', help="show version", version=version.version)
 
     def exec_command(self, command):
@@ -62,8 +63,10 @@ class CCT_CLI(object):
 
     def process_changes(self, changes):
         for change in changes:
+            if change is '':
+                continue
             scheme = urlparse(change).scheme
-            if scheme == 'http':
+            if 'http' in scheme:
                 self.process_url(change)
             else:
                 self.process_file(change)
@@ -71,11 +74,14 @@ class CCT_CLI(object):
     def run(self):
         self.setup_arguments()
         env_changes=None
+        changes = []
         try:
             env_changes = os.environ['CCT_CHANGES']
         except KeyError:
             pass
         args = self.parser.parse_args()
+        if args.get_changes:
+            changes += urllib2.urlopen(args.get_changes).read().split('\n')
         if args.verbose:
             setup_logging(level=logging.DEBUG)
         elif args.quiet:
@@ -86,8 +92,7 @@ class CCT_CLI(object):
             Modules.list()
         elif args.show:
             Modules.list_module_oper(args.show)
-        elif args.changes or env_changes:
-            changes = []
+        else:
             ## env changes overides cmdline ones
             ## seems odd but really needed for containers - changes are passed
             ## via docker run -e
