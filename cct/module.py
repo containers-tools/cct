@@ -11,6 +11,8 @@ import logging
 import os
 import string
 
+from pkg_resources import resource_string
+
 logger = logging.getLogger('cct')
 
 
@@ -129,6 +131,9 @@ class Module(object):
 
     def teardown(self):
         pass
+
+    def _get_resource(self, module, resource):
+        return resource_string(module, resource)
 
     def _process_environment(self, operation):
         if '$' in operation.command:
