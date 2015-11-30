@@ -11,7 +11,7 @@ import logging
 import os
 import string
 
-from pkg_resources import resource_string
+from pkg_resources import resource_string, resource_filename
 
 logger = logging.getLogger('cct')
 
@@ -134,6 +134,9 @@ class Module(object):
 
     def _get_resource(self, module, resource):
         return resource_string(module, resource)
+
+    def _get_resource_path(self, module, resource):
+        return resource_filename(module, resource)
 
     def _process_environment(self, operation):
         if '$' in operation.command:
