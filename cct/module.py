@@ -51,7 +51,10 @@ class ModuleRunner(object):
 
     def setup(self):
         #FIXME look through all .py files in that dir and take one which inherits correct interface
-        directory = os.path.join(os.path.dirname(__file__), 'modules')
+        try:
+            directory = os.environ['CCT_MODULES_PATH']
+        except KeyError:
+            directory = os.path.join(os.path.dirname(__file__), 'modules')
         filename = directory + "/" + self.module.name + "/cct_module.py"
         module_name = "cct.module." + self.module.name
         logger.debug("importing module %s to %s" % (filename, module_name ))
@@ -190,7 +193,11 @@ class Modules(object):
     @staticmethod
     def list():
         # FIXME - for now list only module directories - we need to create a way to register modules better
-        directory = os.path.join(os.path.dirname(__file__), 'modules')
+        # HACK - enable CCT_MODULE_PATH variable override
+        try:
+            directory = os.environ['CCT_MODULES_PATH']
+        except KeyError:
+            directory = os.path.join(os.path.dirname(__file__), 'modules')
         print("available cct modules:")
         for module in os.listdir(directory):
             if os.path.isdir(directory + "/" + module):

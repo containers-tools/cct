@@ -5,6 +5,7 @@
     - bar: gbar
   changes:
     - dummy:
+      - archive: http://www.foo.bar
       - environment:
         - bar: lbar
         - baz: lbaz
