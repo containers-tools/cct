@@ -155,7 +155,6 @@ class Module(object):
             method_params = inspect.getargspec(method)
             args = []
             kwargs = {}
-            print operation.args
             for arg in operation.args:
                 if '=' in arg:
                     key, value = arg.split('=',1)
@@ -169,7 +168,7 @@ class Module(object):
             logger.debug("operaton '%s' Passed" %operation.command)
             operation.state = "Passed"
         except:
-            logger.error("%s is not supported by module", operation.command)
+            logger.eror("%s is not supported by module", operation.command)
             operation.state = "Error"
             self.state = "Error"
             raise

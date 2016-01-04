@@ -18,9 +18,6 @@ class Openshift(Module):
     jboss_home = os.getenv("JBOSS_HOME")
     sources_dir = None
 
-    def dummy(self):
-        print "dummy"
-
     def setup(self, sources_dir="."):
         self.sources_dir = sources_dir
 
@@ -125,9 +122,7 @@ class Openshift(Module):
             for d in dirs:
                 target = os.path.join(root, d)
                 os.chown(target, "jboss", "jboss")
-                os.chmod(target, 0755)
-
-
+                os.chmod(target, 0o755)
 
     def add_openshift_ping(self, version):
         """Adds openshift ping implementation"""

@@ -1,4 +1,4 @@
-- name: dummy
+- name: openshift
   description: execute dummy steps
   environment:
     - foo: gfoo

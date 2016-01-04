@@ -41,7 +41,6 @@ class XMLEdit(object):
         return False
 
     def update_attrib(self, xpath, attrib,  value):
-        print  self.root.xpath(xpath, namespaces=self.namespaces)
         for element in self.root.xpath(xpath, namespaces=self.namespaces):
             element.attrib[attrib] = value
         self._writexml()
