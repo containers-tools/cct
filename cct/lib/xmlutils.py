@@ -18,7 +18,7 @@ class XMLEdit(object):
             self._getnamespaces()
 
     def _getnamespaces(self):
-        for k,v in self.root.nsmap.iteritems():
+        for k,v in self.root.nsmap.items():
             if k:
                 self.namespaces[k] = v
             else:
@@ -41,7 +41,6 @@ class XMLEdit(object):
         return False
 
     def update_attrib(self, xpath, attrib,  value):
-        print  self.root.xpath(xpath, namespaces=self.namespaces)
         for element in self.root.xpath(xpath, namespaces=self.namespaces):
             element.attrib[attrib] = value
         self._writexml()

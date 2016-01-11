@@ -1,0 +1,22 @@
+- name: openshift
+  description: execute dummy steps
+  environment:
+    - foo: gfoo
+    - bar: gbar
+  changes:
+    - openshift:
+        - setup: /tmp/install/
+        - setup_jolokia: version=1.3.2.redhat-1
+        - add_custom_launch_script:
+        - setup_liveness_probe:
+        - setup_readiness_probe:
+        - setup_logging:
+        - add_custom_configfile:
+        - add_amq_rar:
+        - inject_maven_settings:
+        - link_java_db_drivers:
+        - remove_console:
+        - setup_jdk: version=1.8.0-openjdk
+        - setup_s2i:
+        - add_openshift_ping: version=1.0.0.Beta7-redhat-1
+        - setup_deployment_dir:

@@ -56,7 +56,6 @@ class JBossCliModule(Module):
             logger.debug('launching cli: "%s %s"' % ((self.jboss_home + "/bin/jboss-cli.sh"), tf.name))
             cli = Popen([self.jboss_home + "/bin/jboss-cli.sh", "--connect", "--file=%s" %tf.name], stdout=PIPE, stderr=PIPE,)
             out, err = cli.communicate()
-            print err
             if cli.returncode == 0:
                 #success
                 logger.debug('Command completed succesfully.')
@@ -64,8 +63,6 @@ class JBossCliModule(Module):
             else:
                 logger.error('Command failed, msg: %s.' %(out + err))
                 raise CCTError("Cannot run jboss_cli command return code: '%s'.", cli.returncode)
-                logger.debug("command '%s' returned: %s" %(command, line))
-
 
     def run_cli_batch(self, *command):
         """

@@ -1,10 +1,10 @@
 - name: samples.jboss_cli
   description: execute samples jboss_cli steps
   changes:
-    - file:
+    - base.File:
         - copy: standalone.xml standalone-openshift.xml
         - copy: source=standalone.xml destination=standalone2.xml
-    - xmledit:
+    - base.XML:
       - setup: standalone-openshift.xml
       - insert: >
           xpath=/ns:server/ns:extensions
