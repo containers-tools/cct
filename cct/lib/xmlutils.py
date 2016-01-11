@@ -18,7 +18,7 @@ class XMLEdit(object):
             self._getnamespaces()
 
     def _getnamespaces(self):
-        for k,v in self.root.nsmap.iteritems():
+        for k,v in self.root.nsmap.items():
             if k:
                 self.namespaces[k] = v
             else:

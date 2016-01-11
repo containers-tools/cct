@@ -12,10 +12,10 @@ from cct.errors import CCTError
 
 
 class AMQ(Module):
-    ini_file = "users.ini"
+    ini_file = None
     xmledit = None
 
-    def setup(self, activemq_xml, ini_file):
+    def setup(self, activemq_xml, ini_file = "users.ini"):
         self.xmledit = XMLEdit(activemq_xml)
         self.ini_file = ini_file
 
@@ -27,6 +27,7 @@ class AMQ(Module):
             transport = transport.strip()
             self.logger.info("Configuring '%s' transport..." % transport)
             if transport == "openwire":
+
                 transports.append(transport_template %
                                   (transport, "tcp", "61616"))
                 transports.append(transport_template %
@@ -90,7 +91,6 @@ class AMQ(Module):
         """
         if not topics:
             raise CCTError("No topic names provided, we cannot proceed with setting up AMQ topics without it")
-
         if not self.xmledit.does_element_exists(".//*[local-name()='destinations']"):
             self.xmledit.add_element(".//*[local-name()='broker']", "<destinations></destinations>")
 

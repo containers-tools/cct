@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from cct.modules.shell.cct_module import Shell
+from cct.modules.base.shell import Shell
 from cct.errors import CCTError
 
 class TestShellModule(unittest.TestCase):
