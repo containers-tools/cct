@@ -103,11 +103,6 @@ class Openshift(Module):
         os.symlink("/opt/rh/mongodb24/root/usr/share/java/mongo.jar",
                    "%s/modules/system/layers/openshift/org/mongodb/main/mongo.jar" %self.jboss_home)
 
-    def remove_console(self):
-        shutil.rmtree("%s/modules/system/layers/base/org/jboss/as/console" %self.jboss_home)
-        for console in glob.glob("%s/modules/system/layers/base/.overlays/*/org/jboss/as/console" %self.jboss_home):
-            shutil.rmtree(console)
-
     def setup_jdk(self, version):
         self.shell("alternatives --install /usr/bin/java java /usr/lib/jvm/java-%s/jre/bin/java 1" %version)
         self.shell("alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-%s/bin/javac 1" %version)

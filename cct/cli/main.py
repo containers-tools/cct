@@ -89,9 +89,11 @@ class CCT_CLI(object):
         else:
             setup_logging(level=logging.INFO)
         if args.list:
-            Modules.list()
+            modules = Modules()
+            modules.list()
         elif args.show:
-            Modules.list_module_oper(args.show)
+            modules = Modules()
+            modules.list_module_oper(args.show)
         else:
             ## env changes overides cmdline ones
             ## seems odd but really needed for containers - changes are passed

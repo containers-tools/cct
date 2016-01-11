@@ -4,14 +4,13 @@
     - foo: gfoo
     - bar: gbar
   changes:
-    - dummy:
-      - archive: http://www.foo.bar
+    - base.Dummy:
       - environment:
         - bar: lbar
         - baz: lbaz
       - dump: bar baz
       - dump: norfy
-    - shell:
+    - base.Shell:
       - shell: pwd
       - shell: ls -l
       - shell: echo $HOME

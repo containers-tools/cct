@@ -9,5 +9,5 @@ import logging
 from cct.lib.jboss_module import JBossCliModule
 logger = logging.getLogger('cct')
 
-class jboss_cli(JBossCliModule):
+class Cli(JBossCliModule):
     pass
