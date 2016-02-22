@@ -1,4 +1,3 @@
-
 """
 Copyright (c) 2015 Red Hat, Inc
 All rights reserved.

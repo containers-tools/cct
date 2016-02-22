@@ -6,6 +6,8 @@ This software may be modified and distributed under the terms
 of the MIT license. See the LICENSE file for details.
 """
 
+import os
+import pwd
 import subprocess
 
 from cct.errors import CCTError
@@ -29,9 +31,17 @@ class Shell(Module):
         """
         Runs given comman in a shell
         """
+        self.shell_as_user( None, *command)
+
+    def shell_as_user(self, user=None, *command):
+        user_uid = os.getuid()
+        if user:
+            print user
+            user_uid = pwd.getpwnam(user).pw_uid
+
         self.logger.debug("Executing shell command: '%s'" % " ".join(command))
         process = subprocess.Popen(
-            " ".join(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            " ".join(command), preexec_fn=self._demote(user_uid), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=self.env, shell=True)
         stdout, stderr = process.communicate()
         retcode = process.wait()
@@ -46,3 +56,9 @@ class Shell(Module):
                 "Command '%s' executed successfully" % " ".join(command))
         else:
             raise CCTError("Command '%s' failed" % " ".join(command))
+
+
+    def _demote(self, user_uid):
+        def set_ids():
+            os.setuid(user_uid)
+        return set_ids

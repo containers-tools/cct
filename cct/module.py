@@ -28,7 +28,7 @@ class ChangeRunner(object):
             directory = os.environ['CCT_MODULES_PATH']
         except KeyError:
             directory = os.path.join(os.path.dirname(__file__), 'modules')
-        self.modules = Modules()
+            self.modules = Modules()
         self.modules.find_modules(directory)
 
     def run(self):
@@ -37,7 +37,7 @@ class ChangeRunner(object):
                 module.instance = self.modules.modules[module.name]
                 runner = ModuleRunner(module)
             else:
-                raise CCTError("no such module %s" %module)
+                raise CCTError("no such module %s" %module.name)
             try:
                 runner.run()
                 logger.info("module %s succesfully processed all steps" %module.name)
@@ -159,7 +159,7 @@ class Module(object):
             logger.debug("operaton '%s' Passed" %operation.command)
             operation.state = "Passed"
         except:
-            logger.eror("%s is not supported by module", operation.command)
+            logger.error("%s is not supported by module", operation.command)
             operation.state = "Error"
             self.state = "Error"
             raise
