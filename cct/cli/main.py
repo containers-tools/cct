@@ -95,7 +95,7 @@ class CCT_CLI(object):
             modules = Modules()
             modules.list_module_oper(args.show)
         else:
-            ## env changes overides cmdline ones
+            ## env changes overrides cmdline ones
             ## seems odd but really needed for containers - changes are passed
             ## via docker run -e
             if env_changes:
