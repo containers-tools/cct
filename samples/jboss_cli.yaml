@@ -4,4 +4,4 @@
     - jboss.Cli:
       # set jboss home - uses $JBOSS_HOME by default
       - setup:
-      - run: data-source remove --name=ExampleDS
+      - run_cli: data-source remove --name=ExampleDS
