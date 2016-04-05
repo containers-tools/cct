@@ -13,4 +13,5 @@
     - base.Shell:
       - shell: pwd
       - shell: ls -l
-      - shell: echo $HOME
+      - shell: whoami
+      - shell_as_user: dbecvari whoami --help

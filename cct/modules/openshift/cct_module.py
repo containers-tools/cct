@@ -22,10 +22,10 @@ class Openshift(Module):
 
     def setup_jolokia(self, version):
         """ setup jolokia agent for jboss """
-        # Add Jolokia (http://www.jolokia.org/) to expose all MBeans
+
         shutil.copy("%s/jolokia-jvm-%s-agent.jar" %(self.sources_dir, version),
                     "%s/jolokia.jar" %self.jboss_home)
-        # Start Jolokia agent on boot
+
         with open('%s/bin/standalone.conf' %self.jboss_home, 'w') as f:
             for line in fileinput.input(self._get_resource_path(__name__, "data/standalone.conf")):
                 f.write(line)
@@ -63,8 +63,6 @@ class Openshift(Module):
 
     def setup_logging(self):
         """"""
-        # Configure logging
-        # (TODO: Move org/jboss/logmanager/ext from "base" to "openshift" layer, and override org/jboss/logging as we do for modules above)
         os.makedirs("%s/modules/system/layers/base/org/jboss/logmanager/ext/main/" %self.jboss_home)
         shutil.copy(self._get_resource_path(__name__, "data/logging.properties"),
                     "%s/standalone/configuration/" %self.jboss_home)

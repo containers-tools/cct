@@ -1,5 +1,5 @@
-- name: openshift
-  description: execute dummy steps
+- name: openshift.eap.setup
+  description: execute steps for eap
   environment:
     - foo: gfoo
     - bar: gbar

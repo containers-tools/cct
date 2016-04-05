@@ -36,7 +36,6 @@ class Shell(Module):
     def shell_as_user(self, user=None, *command):
         user_uid = os.getuid()
         if user:
-            print user
             user_uid = pwd.getpwnam(user).pw_uid
 
         self.logger.debug("Executing shell command: '%s'" % " ".join(command))
