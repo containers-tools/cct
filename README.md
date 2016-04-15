@@ -22,3 +22,5 @@ $ python cct/cli/main.py -h
 ``` bash
 python cct/cli/main.py -v dummy.yaml
 ```
+
+if command completes successfully you should get 0 result code and no error logged on stdout
