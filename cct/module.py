@@ -10,6 +10,7 @@ import inspect
 import logging
 import os
 import string
+import yaml
 
 from cct.errors import CCTError
 from pkg_resources import resource_string, resource_filename
@@ -66,6 +67,8 @@ class ModuleRunner(object):
     def  run(self):
         self.module.instance = self.module.instance(self.module.name, self.module.operations, self.module.environment)
         for operation in self.module.operations:
+            if operation.command in ['setup', 'run', 'teardown', 'version']:
+                continue
             self.module._process_environment(operation)
             # FIXME inject environment
             try:
@@ -98,13 +101,29 @@ class Module(object):
     operations = []
     instance = None
     state = "NotRun"
+    artifacts = {}
 
     def __init__(self, name, operations, environment={}):
         self.name = name
         self.operations = operations
         self.environment = environment
+
         # TODO: we need to do it properly
         self.logger = logger
+        try:
+            with open (os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
+                               "sources.yaml")) as stream:
+                self._process_sources(yaml.load(stream))
+        except:
+            pass
+
+
+    def _process_sources(self, artifacts):
+        for artifact in artifacts:
+            cct_resource = CctResource(artifact['name'],
+                                       artifact['chksum'],
+                                       artifact['handle'])
+            self.artifacts[artifact['handle']] = cct_resource
 
     def _replace_variables(self, string):
         result = ""
@@ -160,11 +179,27 @@ class Module(object):
             method(*args, **kwargs)
             logger.debug("operaton '%s' Passed" %operation.command)
             operation.state = "Passed"
-        except:
-            logger.error("%s is not supported by module", operation.command)
+        except Exception as e:
+            logger.error("%s is not supported by module %s", operation.command, e, exc_info=True)
             operation.state = "Error"
             self.state = "Error"
-            raise
+            raise e
+
+class CctResource(object):
+    """
+    Object representing resource file for changes
+    name - name of the file
+    sum - md5sum
+    handle - optional alias to mark correct file (version indenpent name for jars)
+    """
+    name = None
+    chksum = None
+    handle = None
+
+    def __init__(self, name, chksum, handle=None):
+        self.name = name
+        self.chksum = chksum
+        self.handle = handle
 
 class Operation(object):
     """
@@ -242,7 +277,7 @@ class Modules(object):
 
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run1', 'setup', 'teardown']:
+                if method[0] in string.ascii_lowercase and method not in ['run', 'version', 'setup', 'teardown']:
                     print("  %s: %s" %(method, getattr(module.instance, method).__doc__))
 
         if getattr(module.instance, "teardown").__doc__:
