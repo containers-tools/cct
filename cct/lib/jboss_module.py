@@ -84,11 +84,10 @@ class JBossCliModule(Module):
         self._run_jboss_cli(' '.join(command))
 
     def _clear(self):
-        shutil.rmtree(self.jboss_home + "/standalone/log")
-        shutil.rmtree(self.jboss_home + "/standalone/data")
-        shutil.rmtree(self.jboss_home + "/standalone/tmp/vfs")
-        shutil.rmtree(self.jboss_home + "/standalone/tmp/work")
-        shutil.rmtree(self.jboss_home + "/standalone/configuration/standalone_xml_history")
+        for part in ["log", "data", "tmp/vfs", "tmp/work", "configuration/standalone_xml_history"]:
+            path = os.path.join(self.jboss_home, "standalone", part)
+            if os.path.exists(path):
+                shutil.rmtree(path)
 
     def teardown(self):
         if self.jboss_process:
