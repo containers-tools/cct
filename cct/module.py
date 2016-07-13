@@ -24,11 +24,13 @@ class ChangeRunner(object):
 
     def __init__(self, change):
         self.change = change
-        try:
+
+        if 'CCT_MODULES_PATH' in os.environ:
             directory = os.environ['CCT_MODULES_PATH']
-        except KeyError:
+        else:
             directory = os.path.join(os.path.dirname(__file__), 'modules')
-            self.modules = Modules()
+
+        self.modules = Modules()
         self.modules.find_modules(directory)
 
     def run(self):
