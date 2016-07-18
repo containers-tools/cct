@@ -44,7 +44,7 @@ A tool for configuring containers.
 %endif
 
 %prep
-%setup -qn cct
+%setup -qn python-cct-%{version}
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
