@@ -25,14 +25,15 @@ class ChangeRunner(object):
 
     def __init__(self, change):
         self.change = change
+        self.modules = Modules()
+
+        directory = os.path.join(os.path.dirname(__file__), 'modules')
+        self.modules.find_modules(directory)
 
         if 'CCT_MODULES_PATH' in os.environ:
             directory = os.environ['CCT_MODULES_PATH']
-        else:
-            directory = os.path.join(os.path.dirname(__file__), 'modules')
+            self.modules.find_modules(directory)
 
-        self.modules = Modules()
-        self.modules.find_modules(directory)
 
     def run(self):
         for module in self.change.changes:
@@ -245,23 +246,24 @@ class Modules(object):
                     self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls
 
     def list(self):
-        # HACK - enable CCT_MODULE_PATH variable override
-        try:
-            directory = os.environ['CCT_MODULES_PATH']
-        except KeyError:
-            directory = os.path.join(os.path.dirname(__file__), 'modules')
+        directory = os.path.join(os.path.dirname(__file__), 'modules')
         self.find_modules(directory)
+
+        if 'CCT_MODULES_PATH' in os.environ:
+            directory = os.environ['CCT_MODULES_PATH']
+            self.find_modules(directory)
+
         print("available cct modules:")
         for module, _ in self.modules.iteritems():
             print("  %s" %module)
 
     def list_module_oper(self,name):
-        try:
-            directory = os.environ['CCT_MODULES_PATH']
-        except KeyError:
-            directory = os.path.join(os.path.dirname(__file__), 'modules')
-
+        directory = os.path.join(os.path.dirname(__file__), 'modules')
         self.find_modules(directory)
+
+        if 'CCT_MODULES_PATH' in os.environ:
+            directory = os.environ['CCT_MODULES_PATH']
+            self.find_modules(directory)
 
         module = Module(name, None)
         if module.name in self.modules.keys():
