@@ -15,4 +15,4 @@ USER jboss
 # register cct in the image
 ENTRYPOINT ["/usr/bin/cct", "-vc"]
 
-CMD ["/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0"]
+CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]

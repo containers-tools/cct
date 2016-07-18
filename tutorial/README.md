@@ -8,22 +8,22 @@ or just pull `jmtd/wildfly-cct`):
 
     FROM jboss/wildfly:10.0.0.Final
     USER root
-    
+
     # Install packages necessary to install cct
     RUN yum -y install python python-setuptools git && yum clean all
-    
+
     # Install cct
     RUN git clone https://github.com/containers-tools/cct \
          && cd cct \
          && easy_install . \
          && cd .. \
          && rm -rf cct
-    
+
     USER jboss
     # register cct in the image
     ENTRYPOINT ["/usr/bin/cct", "-vc"]
-    
-    CMD ["/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0"]
+
+    CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
 
 The rest of this tutorial will assume that the image was named `wildfly-cct`.
 
@@ -31,11 +31,6 @@ Some points:
 
   * We use Docker's `ENTRYPOINT` command to ensure that cct is invoked
     when a container is started, regardless of what `CMD` is set to.
-
-  * The individual command-line arguments in the `CMD` need to be melded
-    into a single argument, which is passed to `cct`. This means we must
-    declare CMD in our Dockerfile, we can't just inherit from the parent
-    image.
 
 ## First `cct` test
 

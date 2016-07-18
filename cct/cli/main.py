@@ -37,12 +37,11 @@ class CCT_CLI(object):
         self.parser.add_argument('changes', help='YAML files to process', nargs="*")
         self.parser.add_argument('-l', '--list', help='list all modules', action="store_true")
         self.parser.add_argument('-s', '--show', help='show module usage')
-        self.parser.add_argument('-c', '--command', help="exec this command after processing changes")
+        self.parser.add_argument('-c', '--command', help="exec this command after processing changes", nargs=argparse.REMAINDER)
         self.parser.add_argument('-g', '--get-changes', help="download a list of changes from url")
         self.parser.add_argument('--version', action='version', help="show version", version=version.version)
 
     def exec_command(self, command):
-        command = shlex.split(command)
         if command[1:]:
             logger.info("executing command %s with args %s" %(command[0], " ".join(command[1:])))
         else:
