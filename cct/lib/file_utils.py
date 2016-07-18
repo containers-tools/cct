@@ -19,11 +19,11 @@ def chown(path, user=None, group=None, recursive=False):
     if user is None:
         uid = -1
     else:
-        uid = getpwnam(user)
+        uid = getpwnam(user).pw_uid
     if group is None:
         gid = -1
     else:
-        gid = getgrnam(group)
+        gid = getgrnam(group).gr_gid
     if recursive:
         for root, dirs, files in os.walk(path):
             for d in dirs:
