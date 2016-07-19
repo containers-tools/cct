@@ -67,8 +67,9 @@ class ModuleRunner(object):
 
     def  run(self):
         self.module.instance = self.module.instance(self.module.name, self.module.operations, self.module.environment)
+        self.module.instance.setup()
         for operation in self.module.operations:
-            if operation.command in ['setup', 'run', 'teardown', 'version']:
+            if operation.command in ['setup', 'run', 'teardown']:
                 continue
             self.module._process_environment(operation)
             # FIXME inject environment
@@ -279,7 +280,7 @@ class Modules(object):
 
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run', 'version', 'setup', 'teardown']:
+                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'teardown']:
                     print("  %s: %s" %(method, getattr(module.instance, method).__doc__))
 
         if getattr(module.instance, "teardown").__doc__:
