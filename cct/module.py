@@ -31,9 +31,8 @@ class ChangeRunner(object):
         self.modules.find_modules(directory)
 
         if 'CCT_MODULES_PATH' in os.environ:
-            directory = os.environ['CCT_MODULES_PATH']
-            self.modules.find_modules(directory)
-
+            for d in os.environ['CCT_MODULES_PATH'].split(":"):
+                self.modules.find_modules(d)
 
     def run(self):
         for module in self.change.changes:
@@ -251,8 +250,8 @@ class Modules(object):
         self.find_modules(directory)
 
         if 'CCT_MODULES_PATH' in os.environ:
-            directory = os.environ['CCT_MODULES_PATH']
-            self.find_modules(directory)
+            for d in os.environ['CCT_MODULES_PATH'].split(":"):
+                self.find_modules(d)
 
         print("available cct modules:")
         for module, _ in self.modules.iteritems():
@@ -263,8 +262,8 @@ class Modules(object):
         self.find_modules(directory)
 
         if 'CCT_MODULES_PATH' in os.environ:
-            directory = os.environ['CCT_MODULES_PATH']
-            self.find_modules(directory)
+            for d in os.environ['CCT_MODULES_PATH'].split(":"):
+                self.find_modules(d)
 
         module = Module(name, None)
         if module.name in self.modules.keys():
