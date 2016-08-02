@@ -1,13 +1,13 @@
 - name: dummy
   description: execute dummy steps
   environment:
-    - foo: gfoo
-    - bar: gbar
+    foo: gfoo
+    bar: gbar
   changes:
     - base.Dummy:
       - environment:
-        - bar: lbar
-        - baz: lbaz
+        bar: lbar
+        baz: lbaz
       - dump: bar baz
       - dump: norfy
     - base.Shell:

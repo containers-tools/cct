@@ -38,8 +38,7 @@ class ChangeProcessor(object):
         if env is None:
             return env_dict
         for variable in env:
-            for key, value in variable.items():
-                env_dict[key]=value
+            env_dict[variable]=env[variable]
         return env_dict
 
     def _process_change(self, change_cfg):
