@@ -229,7 +229,10 @@ class Modules(object):
             for candidate in files:
                 if os.path.splitext(candidate)[1] == '.py':
                     logger.debug("inspecting %s" %root + "/" + candidate)
-                    self.check_module(root + "/" + candidate)
+                    try:
+                        self.check_module(root + "/" + candidate)
+                    except Exception as e:
+                        logging.error("Cannot import module %s" %e, exc_info=True)
 
     def check_module(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
