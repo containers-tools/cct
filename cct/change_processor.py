@@ -23,7 +23,7 @@ class ChangeProcessor(object):
         for change in self.config:
             self._process_change(change)
 
-    def _merge_environemnt(self, change_env, module_env):
+    def _merge_environment(self, change_env, module_env):
         if change_env is None:
             return module_env
         if module_env is None:
@@ -59,10 +59,10 @@ class ChangeProcessor(object):
                     for name, args in op.items():
                         logger.debug(name)
                         if name == "environment":
-                            environment = self._merge_environemnt(change.environment, self._create_env_dict(args))
+                            environment = self._merge_environment(change.environment, self._create_env_dict(args))
                         else:
                             if args:
-                                operation = Operation(name, shlex.split(args))
+                                operation = Operation(name, shlex.split(str(args)))
                             else:
                                 operation = Operation(name, None)
                             operations.append(operation)
