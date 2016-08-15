@@ -163,7 +163,7 @@ class Module(object):
     def _process_environment(self, operation):
         if '$' in operation.command:
             operation.command = self._replace_variables(operation.command)
-        for i in xrange(len(operation.args)):
+        for i in range(len(operation.args)):
             if '$' in operation.args[i]:
                 operation.args[i] = self._replace_variables(operation.args[i])
 
