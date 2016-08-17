@@ -128,9 +128,11 @@ class Module(object):
     def _process_sources(self, artifacts):
         for artifact in artifacts:
             cct_resource = CctResource(artifact['name'],
-                                       artifact['chksum'],
-                                       artifact['handle'])
-            self.artifacts[artifact['handle']] = cct_resource
+                                       artifact['chksum'])
+            if 'handle' in artifact:
+                self.artifacts[artifact['handle']] = cct_resource
+            else:
+                self.artifacts[artifact['name']] = cct_resource
 
     def _replace_variables(self, string):
         result = ""
@@ -197,16 +199,13 @@ class CctResource(object):
     Object representing resource file for changes
     name - name of the file
     sum - md5sum
-    handle - optional alias to mark correct file (version indenpent name for jars)
     """
     name = None
     chksum = None
-    handle = None
 
-    def __init__(self, name, chksum, handle=None):
+    def __init__(self, name, chksum):
         self.name = name
         self.chksum = chksum
-        self.handle = handle
 
 class Operation(object):
     """
