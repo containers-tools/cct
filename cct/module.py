@@ -128,7 +128,7 @@ class Module(object):
     def _process_sources(self, artifacts):
         for artifact in artifacts:
             cct_resource = CctResource(artifact['name'],
-                                       artifact['chksum'])
+                                       artifact['md5sum'])
             if 'handle' in artifact:
                 self.artifacts[artifact['handle']] = cct_resource
             else:
@@ -198,14 +198,14 @@ class CctResource(object):
     """
     Object representing resource file for changes
     name - name of the file
-    sum - md5sum
+    md5sum - md5sum
     """
     name = None
-    chksum = None
+    md5sum = None
 
-    def __init__(self, name, chksum):
+    def __init__(self, name, md5sum):
         self.name = name
-        self.chksum = chksum
+        self.md5sum = md5sum
 
 class Operation(object):
     """
