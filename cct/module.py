@@ -154,11 +154,11 @@ class Module(object):
     def teardown(self):
         pass
 
-    def _get_resource(self, module, resource):
-        return resource_string(module, resource)
+    def _get_resource(self, resource):
+        return resource_string(inspect.getmodule(self.__class__).__name__, resource)
 
-    def _get_resource_path(self, module, resource):
-        return resource_filename(module, resource)
+    def _get_resource_path(self, resource):
+        return resource_filename(inspect.getmodule(self.__class__).__name__, resource)
 
     def _process_environment(self, operation):
         if '$' in operation.command:
