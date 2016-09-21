@@ -118,12 +118,12 @@ class Module(object):
         except:
             pass
 
-    def getenv(self, name):
+    def getenv(self, name, default=None):
         if os.environ.get(name):
             return os.environ.get(name)
         if name in self.environment:
             return self.environment[name]
-        return None
+        return default
 
     def _process_sources(self, artifacts):
         for artifact in artifacts:
