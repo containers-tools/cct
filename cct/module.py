@@ -118,12 +118,12 @@ class Module(object):
         except:
             pass
 
-    def getenv(self, name):
+    def getenv(self, name, default=None):
         if os.environ.get(name):
             return os.environ.get(name)
         if name in self.environment:
             return self.environment[name]
-        return None
+        return default
 
     def _process_sources(self, artifacts):
         for artifact in artifacts:
@@ -156,11 +156,11 @@ class Module(object):
     def teardown(self):
         pass
 
-    def _get_resource(self, module, resource):
-        return resource_string(module, resource)
+    def _get_resource(self, resource):
+        return resource_string(inspect.getmodule(self.__class__).__name__, resource)
 
-    def _get_resource_path(self, module, resource):
-        return resource_filename(module, resource)
+    def _get_resource_path(self, resource):
+        return resource_filename(inspect.getmodule(self.__class__).__name__, resource)
 
     def _process_environment(self, operation):
         if '$' in operation.command:
