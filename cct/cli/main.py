@@ -10,7 +10,6 @@ import argparse
 import logging
 import yaml
 import os
-import shlex
 import sys
 import urllib2
 
@@ -78,6 +77,9 @@ class CCT_CLI(object):
             env_changes = os.environ['CCT_CHANGES']
         except KeyError:
             pass
+        if len(sys.argv) < 2:
+            self.parser.print_help()
+            sys.exit(1)
         args = self.parser.parse_args()
         if args.get_changes:
             changes += urllib2.urlopen(args.get_changes).read().split('\n')
@@ -112,6 +114,8 @@ class CCT_CLI(object):
                     logger.error("Exception caught: %s", repr(ex))
         if args.command:
             self.exec_command(args.command)
+
+
 def run():
     cli=CCT_CLI()
     cli.run()
