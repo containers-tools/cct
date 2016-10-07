@@ -42,3 +42,15 @@ def chmod(path, perm, recursive=False):
                 os.chmod(os.path.join(path, root, f), perm)
     else:
         os.chmod(path, perm)
+
+def find(dirname, dirtest, fileaction):
+    """
+    find: recursively traverse a filesystem structure, expanding
+    directories that pass the supplied dirtest, and applying the
+    supplied fileaction to each node.
+    """
+    for child in os.listdir(dirname):
+        fullpath = os.path.join(dirname, child)
+        fileaction(fullpath)
+        if os.path.isdir(fullpath) and dirtest(child):
+            find(fullpath, dirtest, fileaction)

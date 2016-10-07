@@ -13,6 +13,7 @@ import string
 import yaml
 
 from cct.errors import CCTError
+from cct.lib import file_utils
 from pkg_resources import resource_string, resource_filename
 
 logger = logging.getLogger('cct')
@@ -230,18 +231,22 @@ class Modules(object):
         Finds all modules in the subdirs of directory
         """
         logger.debug("discovering modules in %s" %directory)
-        for root, _, files in os.walk(directory):
-            candidate_dir = root.replace(directory, "", 1)
-            if "/tests" in candidate_dir or "/." in candidate_dir:
-                logger.debug("skipping {}, tests or hidden directory".format(candidate_dir))
-                continue
-            for candidate in files:
-                if os.path.splitext(candidate)[1] == '.py':
-                    logger.debug("inspecting %s" %root + "/" + candidate)
-                    try:
-                        self.check_module(root + "/" + candidate)
-                    except Exception as e:
-                        logging.error("Cannot import module %s" %e, exc_info=True)
+
+        def dirtest(x):
+            if x.startswith('.') or x.startswith('tests'):
+                logger.debug("find_modules: skipping {}".format(x))
+                return False
+            return True
+
+        def fileaction(candidate):
+            if os.path.splitext(candidate)[1] == '.py' and os.path.isfile(candidate):
+                logger.debug("inspecting %s" % candidate)
+                try:
+                    self.check_module(candidate)
+                except Exception as e:
+                    logging.error("Cannot import module %s" %e, exc_info=True)
+
+        file_utils.find(directory, dirtest, fileaction)
 
     def check_module(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
