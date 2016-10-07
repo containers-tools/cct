@@ -232,7 +232,8 @@ class Modules(object):
         logger.debug("discovering modules in %s" %directory)
         for root, _, files in os.walk(directory):
             candidate_dir = root.replace(directory, "", 1)
-            if candidate_dir.startswith("/tests") or candidate_dir.startswith("/."):
+            if "/tests" in candidate_dir or "/." in candidate_dir:
+                logger.debug("skipping {}, tests or hidden directory".format(candidate_dir))
                 continue
             for candidate in files:
                 if os.path.splitext(candidate)[1] == '.py':
