@@ -239,7 +239,7 @@ class Modules(object):
             return True
 
         def fileaction(candidate):
-            if os.path.splitext(candidate)[1] == '.py' and os.path.isfile(candidate):
+            if candidate.endswith(".py") and os.path.isfile(candidate):
                 logger.debug("inspecting %s" % candidate)
                 try:
                     self.check_module(candidate)
