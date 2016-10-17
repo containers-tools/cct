@@ -44,7 +44,7 @@ class ChangeRunner(object):
                 raise CCTError("no such module %s" %module.name)
             try:
                 runner.run()
-                logger.info("module %s succesfully processed all steps" %module.name)
+                logger.info("module %s successfully processed all steps" %module.name)
                 self.results.append(module)
             except:
                 logger.error("module %s failed processing steps" %module.name)
@@ -187,7 +187,7 @@ class Module(object):
                 else:
                     args.append(arg.strip())
             method(*args, **kwargs)
-            logger.debug("operaton '%s' Passed" %operation.command)
+            logger.debug("operation '%s' Passed" %operation.command)
             operation.state = "Passed"
         except Exception as e:
             logger.error("%s is not supported by module %s", operation.command, e, exc_info=True)
