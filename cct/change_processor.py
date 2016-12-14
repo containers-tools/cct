@@ -8,20 +8,35 @@ of the MIT license. See the LICENSE file for details.
 
 import logging
 import shlex
+import os
+
+from cct.lib.git import clone_repo
+from cct.module import Change, ChangeRunner, Module, Operation
 
 logger = logging.getLogger('cct')
-from cct.module import Operation, ChangeRunner, Module, Change
+
 
 class ChangeProcessor(object):
     config = None
 
-    def __init__(self, config):
+    def __init__(self, config, modules_dir):
         self.config = config
+        self.modules_dir = modules_dir
 
     def process(self):
         logger.debug("processing change %s" % self.config)
         for change in self.config:
             self._process_change(change)
+
+    def fetch_modules(self):
+        for changes in self.config:
+            for modules in changes['changes']:
+                for name, ops in modules.items():
+                    for op in ops:
+                        if 'url' in op:
+                            repo_dir = "%s/%s" % (self.modules_dir, os.path.basename(op['url']))
+                            version = op['version'] if 'version' in op else None
+                            clone_repo(op['url'], repo_dir, version)
 
     def _merge_environment(self, change_env, module_env):
         if change_env is None:
@@ -38,7 +53,7 @@ class ChangeProcessor(object):
         if env is None:
             return env_dict
         for variable in env:
-            env_dict[variable]=env[variable]
+            env_dict[variable] = env[variable]
         return env_dict
 
     def _process_change(self, change_cfg):
@@ -68,7 +83,7 @@ class ChangeProcessor(object):
                             operations.append(operation)
                 module = Module(module_name, operations, environment)
                 changes.append(module)
-        runner = ChangeRunner(change)
+        runner = ChangeRunner(change, self.modules_dir)
         try:
             runner.run()
         except:

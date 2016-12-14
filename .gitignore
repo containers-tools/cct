@@ -4,3 +4,4 @@
 target
 .coverage
 *.swp
+modules

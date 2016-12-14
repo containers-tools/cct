@@ -20,16 +20,20 @@ logger = logging.getLogger('cct')
 
 
 class ChangeRunner(object):
+    modules_dir = None
     change = None
     modules = None
     results = []
 
-    def __init__(self, change):
+    def __init__(self, change, modules_dir):
         self.change = change
+        self.modules_dir = modules_dir
         self.modules = Modules()
 
         directory = os.path.join(os.path.dirname(__file__), 'modules')
         self.modules.find_modules(directory)
+
+        self.modules.find_modules(self.modules_dir)
 
         if 'CCT_MODULES_PATH' in os.environ:
             for d in os.environ['CCT_MODULES_PATH'].split(":"):
@@ -41,21 +45,22 @@ class ChangeRunner(object):
                 module.instance = self.modules.modules[module.name]
                 runner = ModuleRunner(module)
             else:
-                raise CCTError("no such module %s" %module.name)
+                raise CCTError("no such module %s" % module.name)
             try:
                 runner.run()
-                logger.info("module %s successfully processed all steps" %module.name)
+                logger.info("module %s successfully processed all steps" % module.name)
                 self.results.append(module)
             except:
-                logger.error("module %s failed processing steps" %module.name)
+                logger.error("module %s failed processing steps" % module.name)
                 self.results.append(module)
                 raise
 
     def print_result_report(self):
         for module in self.results:
-            print("Processed module: %s" %module.name)
+            print("Processed module: %s" % module.name)
             for operation in module.operations:
                 print("  %-30s: %s" % (operation.command, operation.state))
+
 
 class ModuleRunner(object):
     module = None
@@ -65,11 +70,11 @@ class ModuleRunner(object):
         self.module = module
         self.state = "Processing"
 
-    def  run(self):
+    def run(self):
         self.module.instance = self.module.instance(self.module.name, self.module.operations, self.module.environment)
         self.module.instance.setup()
         for operation in self.module.operations:
-            if operation.command in ['setup', 'run', 'teardown']:
+            if operation.command in ['setup', 'run', 'url', 'version', 'teardown']:
                 continue
             self.module._process_environment(operation)
             # FIXME inject environment
@@ -85,6 +90,7 @@ class ModuleRunner(object):
         self.module.instance.teardown()
         self.state = "Passed"
 
+
 class Change(object):
     name = None
     description = None
@@ -96,6 +102,7 @@ class Change(object):
         self.description = description
         self.changes = changes
         self.environment = environment
+
 
 class Module(object):
     name = None
@@ -113,8 +120,8 @@ class Module(object):
         # TODO: we need to do it properly
         self.logger = logger
         try:
-            with open (os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
-                               "sources.yaml")) as stream:
+            with open(os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
+                      "sources.yaml")) as stream:
                 self._process_sources(yaml.load(stream))
         except:
             pass
@@ -143,10 +150,10 @@ class Module(object):
                 var_name = token[1:]
                 # set value from environment
                 if os.environ.get(var_name):
-                    logger.info("Using host variable %s" %token)
+                    logger.info("Using host variable %s" % token)
                     token = os.environ[var_name]
                 elif self.environment.get(var_name):
-                    logger.info("Using yaml file variable %s" %token)
+                    logger.info("Using yaml file variable %s" % token)
                     token = self.environment[var_name]
             result += token + " "
         return result
@@ -179,21 +186,22 @@ class Module(object):
             kwargs = {}
             for arg in operation.args:
                 if '=' in arg:
-                    key, value = arg.split('=',1)
+                    key, value = arg.split('=', 1)
                     if key in method_params.args:
-                        kwargs[key]=value
+                        kwargs[key] = value
                     else:
                         args.append(arg.strip())
                 else:
                     args.append(arg.strip())
             method(*args, **kwargs)
-            logger.debug("operation '%s' Passed" %operation.command)
+            logger.debug("operation '%s' Passed" % operation.command)
             operation.state = "Passed"
         except Exception as e:
             logger.error("%s is not supported by module %s", operation.command, e, exc_info=True)
             operation.state = "Error"
             self.state = "Error"
             raise e
+
 
 class CctResource(object):
     """
@@ -208,6 +216,7 @@ class CctResource(object):
         self.name = name
         self.md5sum = md5sum
 
+
 class Operation(object):
     """
     Object representing single operation
@@ -218,19 +227,20 @@ class Operation(object):
 
     def __init__(self, command, args):
         self.command = command
-        self.args=[]
+        self.args = []
         if args:
             for arg in args:
                 self.args.append(arg.rstrip())
 
+
 class Modules(object):
-    modules = {} # contains module name + its instance
+    modules = {}  # contains module name + its instance
 
     def find_modules(self, directory):
         """
         Finds all modules in the subdirs of directory
         """
-        logger.debug("discovering modules in %s" %directory)
+        logger.debug("discovering modules in %s" % directory)
 
         def dirtest(x):
             if x.startswith('.') or x.startswith('tests'):
@@ -244,7 +254,7 @@ class Modules(object):
                 try:
                     self.check_module(candidate)
                 except Exception as e:
-                    logging.error("Cannot import module %s" %e, exc_info=True)
+                    logging.error("Cannot import module %s" % e, exc_info=True)
 
         file_utils.find(directory, dirtest, fileaction)
 
@@ -259,12 +269,14 @@ class Modules(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    logger.info("found %s" %cls)
+                    logger.info("found %s" % cls)
                     self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls
 
-    def list(self):
+    def list(self, modules_dir):
         directory = os.path.join(os.path.dirname(__file__), 'modules')
         self.find_modules(directory)
+
+        self.find_modules(modules_dir)
 
         if 'CCT_MODULES_PATH' in os.environ:
             for d in os.environ['CCT_MODULES_PATH'].split(":"):
@@ -272,11 +284,13 @@ class Modules(object):
 
         print("available cct modules:")
         for module, _ in self.modules.iteritems():
-            print("  %s" %module)
+            print("  %s" % module)
 
-    def list_module_oper(self,name):
+    def list_module_oper(self, modules_dir, name):
         directory = os.path.join(os.path.dirname(__file__), 'modules')
         self.find_modules(directory)
+
+        self.find_modules(modules_dir)
 
         if 'CCT_MODULES_PATH' in os.environ:
             for d in os.environ['CCT_MODULES_PATH'].split(":"):
@@ -286,18 +300,18 @@ class Modules(object):
         if module.name in self.modules.keys():
             module.instance = self.modules[module.name]
         else:
-            print("Module %s cannot be found!" %name)
+            print("Module %s cannot be found!" % name)
             return
         print("Module %s contains commands: " % name)
         module.instance = module.instance(name, None)
 
         if getattr(module.instance, "setup").__doc__:
-            print("  setup: %s " %getattr(module.instance, "setup").__doc__)
+            print("  setup: %s " % getattr(module.instance, "setup").__doc__)
 
         for method in dir(module.instance):
             if callable(getattr(module.instance, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'teardown']:
-                    print("  %s: %s" %(method, getattr(module.instance, method).__doc__))
+                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'url', 'version', 'teardown']:
+                    print("  %s: %s" % (method, getattr(module.instance, method).__doc__))
 
         if getattr(module.instance, "teardown").__doc__:
-            print("  teardown: %s " %getattr(module.instance, "teardown").__doc__)
+            print("  teardown: %s " % getattr(module.instance, "teardown").__doc__)
