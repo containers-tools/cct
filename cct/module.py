@@ -28,16 +28,7 @@ class ChangeRunner(object):
     def __init__(self, change, modules_dir):
         self.change = change
         self.modules_dir = modules_dir
-        self.modules = Modules()
-
-        directory = os.path.join(os.path.dirname(__file__), 'modules')
-        self.modules.find_modules(directory)
-
-        self.modules.find_modules(self.modules_dir)
-
-        if 'CCT_MODULES_PATH' in os.environ:
-            for d in os.environ['CCT_MODULES_PATH'].split(":"):
-                self.modules.find_modules(d)
+        self.modules = Modules(self.modules_dir)
 
     def run(self):
         for module in self.change.changes:
@@ -236,6 +227,13 @@ class Operation(object):
 class Modules(object):
     modules = {}  # contains module name + its instance
 
+    def __init__(self, *args):
+        # first we get builtin modules
+        self.find_modules(os.path.join(os.path.dirname(__file__), 'modules'))
+        # then fetched modules
+        for mod_dir in args:
+            self.find_modules(mod_dir)
+
     def find_modules(self, directory):
         """
         Finds all modules in the subdirs of directory
@@ -272,30 +270,12 @@ class Modules(object):
                     logger.info("found %s" % cls)
                     self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls
 
-    def list(self, modules_dir):
-        directory = os.path.join(os.path.dirname(__file__), 'modules')
-        self.find_modules(directory)
-
-        self.find_modules(modules_dir)
-
-        if 'CCT_MODULES_PATH' in os.environ:
-            for d in os.environ['CCT_MODULES_PATH'].split(":"):
-                self.find_modules(d)
-
+    def list(self):
         print("available cct modules:")
         for module, _ in self.modules.iteritems():
             print("  %s" % module)
 
-    def list_module_oper(self, modules_dir, name):
-        directory = os.path.join(os.path.dirname(__file__), 'modules')
-        self.find_modules(directory)
-
-        self.find_modules(modules_dir)
-
-        if 'CCT_MODULES_PATH' in os.environ:
-            for d in os.environ['CCT_MODULES_PATH'].split(":"):
-                self.find_modules(d)
-
+    def list_module_oper(self, name):
         module = Module(name, None)
         if module.name in self.modules.keys():
             module.instance = self.modules[module.name]
