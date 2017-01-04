@@ -68,9 +68,7 @@ class CCT_CLI(object):
             else:
                 change = self.process_file(change)
             cp = ChangeProcessor(change, modules_dir)
-            cp.fetch_modules()
-            if not fetch_only:
-                cp.process()
+            cp.process(fetch_only)
 
     def run(self):
         self.setup_arguments()
@@ -92,11 +90,10 @@ class CCT_CLI(object):
             setup_logging(level=logging.ERROR)
         else:
             setup_logging(level=logging.INFO)
+        modules = Modules(args.modules_dir)
         if args.list:
-            modules = Modules(args.modules_dir)
             modules.list()
         elif args.show:
-            modules = Modules(args.modules_dir)
             modules.list_module_oper(args.show)
         else:
             # env changes overrides cmdline ones

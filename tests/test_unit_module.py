@@ -5,6 +5,7 @@ import unittest
 from cct.module import Modules
 from cct.module import Module
 
+
 class TestModules(unittest.TestCase):
 
     def test_find_modules(self):
@@ -13,22 +14,21 @@ class TestModules(unittest.TestCase):
         modules.find_modules(path)
 
     def test_module_getenv_none(self):
-        dummy = Module("dummy", None)
+        dummy = Module("dummy")
         self.assertIsNone(dummy.getenv("bar"))
 
     def test_module_getenv(self):
-        dummy = Module("dummy", None)
-        dummy.environment = { "foo": "foovalue"}
+        dummy = Module("dummy")
+        dummy.environment = {"foo": "foovalue"}
         self.assertEquals(dummy.getenv("foo"), "foovalue")
 
     def test_module_getenv_form_host(self):
-        dummy = Module("dummy", None)
+        dummy = Module("dummy")
         os.environ['foo'] = "foovalue"
         self.assertEquals(dummy.getenv("foo"), "foovalue")
 
     def test_module_getenv_override(self):
-        dummy = Module("dummy", None)
-        dummy.environment = { "foohost": "barvalue"}
+        dummy = Module("dummy")
+        dummy.environment = {"foohost": "barvalue"}
         os.environ['foohost'] = "foovalue"
         self.assertEquals(dummy.getenv("foohost"), "foovalue")
-

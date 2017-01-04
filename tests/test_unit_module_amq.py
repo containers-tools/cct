@@ -12,7 +12,6 @@ class TestAMQModule:
 
     class TestAuthentication(unittest.TestCase):
 
-
         def setUp(self):
             self.amq = AMQ('amq', 'amq')
             xml = BytesIO("<root></root>".encode())

@@ -10,28 +10,27 @@ import inspect
 import logging
 import os
 import string
+import shlex
 import yaml
 
 from cct.errors import CCTError
 from cct.lib import file_utils
+from cct.lib.git import clone_repo
 from pkg_resources import resource_string, resource_filename
 
 logger = logging.getLogger('cct')
 
 
 class ChangeRunner(object):
-    modules_dir = None
-    change = None
-    modules = None
-    results = []
 
-    def __init__(self, change, modules_dir):
+    def __init__(self, change, modules_dir=[]):
         self.change = change
         self.modules_dir = modules_dir
         self.modules = Modules(self.modules_dir)
+        self.results = []
 
     def run(self):
-        for module in self.change.changes:
+        for module in self.change.modules:
             if module.name in self.modules.modules.keys():
                 module.instance = self.modules.modules[module.name]
                 runner = ModuleRunner(module)
@@ -54,21 +53,18 @@ class ChangeRunner(object):
 
 
 class ModuleRunner(object):
-    module = None
-    state = "NotRun"
 
     def __init__(self, module):
         self.module = module
         self.state = "Processing"
 
     def run(self):
-        self.module.instance = self.module.instance(self.module.name, self.module.operations, self.module.environment)
+        self.module.instance = self.module.instance(self.module.name)
         self.module.instance.setup()
         for operation in self.module.operations:
             if operation.command in ['setup', 'run', 'url', 'version', 'teardown']:
                 continue
             self.module._process_environment(operation)
-            # FIXME inject environment
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
                 self.module.instance.run(operation)
@@ -83,39 +79,24 @@ class ModuleRunner(object):
 
 
 class Change(object):
-    name = None
-    description = None
-    environment = {}
-    modules = {}
 
-    def __init__(self, name, changes, description=None, environment=None):
+    def __init__(self, name, modules, description=None, environment=None):
         self.name = name
         self.description = description
-        self.changes = changes
+        self.modules = modules
         self.environment = environment
 
 
 class Module(object):
-    name = None
-    environment = {}
-    operations = []
-    instance = None
-    state = "NotRun"
-    artifacts = {}
 
-    def __init__(self, name, operations, environment={}):
+    def __init__(self, name):
         self.name = name
-        self.operations = operations
-        self.environment = environment
-
-        # TODO: we need to do it properly
+        self.environment = {}
+        self.deps = []
+        self.operations = []
+        self.instance = None
+        self.state = "NotRun"
         self.logger = logger
-        try:
-            with open(os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
-                      "sources.yaml")) as stream:
-                self._process_sources(yaml.load(stream))
-        except:
-            pass
 
     def getenv(self, name, default=None):
         if os.environ.get(name):
@@ -124,7 +105,45 @@ class Module(object):
             return self.environment[name]
         return default
 
-    def _process_sources(self, artifacts):
+    def _update_env(self, env):
+        self.environment.update(env)
+
+    def _process_module_config(self, config):
+        self._process_artifacts(config['artifacts'])
+        self.deps = config['dependencies']
+
+    def _process_operations(self, ops):
+        for op in ops:
+            for name, args in op.items():
+                logger.debug("processing operation %s with args '%s'" % (name, args))
+                if name == "environment":
+                    self._update_env(self._create_env_dict(args))
+                else:
+                    self._add_operation(name, args)
+
+    def _add_operation(self, name, args):
+        operation = Operation(name, shlex.split(str(args)) if args else None)
+        self.operations.append(operation)
+
+    def _install(self, directory):
+        url = None
+        version = None
+        for op in self.operations:
+            if op.command == 'url':
+                url = "".join(op.args)
+            if op.command == 'version':
+                version = "".join(op.args)
+        if url:
+            repo_dir = "%s/%s" % (directory, os.path.basename(url))
+            clone_repo(url, repo_dir, version)
+        try:
+            with open(os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
+                      "module.yml")) as stream:
+                self._process_module_config(yaml.load(stream))
+        except:
+            pass
+
+    def _process_artifacts(self, artifacts):
         for artifact in artifacts:
             cct_resource = CctResource(artifact['name'],
                                        artifact['md5sum'])
@@ -227,17 +246,19 @@ class Operation(object):
 class Modules(object):
     modules = {}  # contains module name + its instance
 
-    def __init__(self, *args):
+    def __init__(self, modules_dir):
         # first we get builtin modules
         self.find_modules(os.path.join(os.path.dirname(__file__), 'modules'))
         # then fetched modules
-        for mod_dir in args:
-            self.find_modules(mod_dir)
+        self.find_modules(modules_dir)
 
     def find_modules(self, directory):
         """
         Finds all modules in the subdirs of directory
         """
+        if not os.path.exists(directory):
+            return
+
         logger.debug("discovering modules in %s" % directory)
 
         def dirtest(x):
