@@ -9,7 +9,7 @@ from cct.module import Module
 class TestModules(unittest.TestCase):
 
     def test_find_modules(self):
-        modules = Modules()
+        modules = Modules("dummy")
         path = os.path.abspath(os.path.dirname(cct.module.__file__)) + "/modules"
         modules.find_modules(path)
 

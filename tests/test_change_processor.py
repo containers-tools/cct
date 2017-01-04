@@ -23,7 +23,7 @@ class TestModule(unittest.TestCase):
             'changes': [{'base.Dummy': [{'dump': '493'}]}],
             'name': 'dummy'
         }]
-        changeProcessor = ChangeProcessor(config)
+        changeProcessor = ChangeProcessor(config, 'foo')
         changeProcessor.process()
 
     def test_process_int_values(self):
@@ -36,7 +36,7 @@ class TestModule(unittest.TestCase):
                         {'base.Dummy': [{'dump': 123}]}],
             'name': 'dummy'
         }]
-        changeProcessor = ChangeProcessor(config)
+        changeProcessor = ChangeProcessor(config, '/foo')
         changeProcessor.process()
 
     def test_fetch_modules(self):
@@ -47,7 +47,7 @@ class TestModule(unittest.TestCase):
             'name': 'dummy'
         }]
         destination = tempfile.mkdtemp()
-        changeProcessor = ChangeProcessor(config)
+        changeProcessor = ChangeProcessor(config, destination)
         changeProcessor.process(fetch_only=False)
         shutil.rmtree(destination)
 

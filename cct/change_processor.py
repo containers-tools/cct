@@ -16,7 +16,7 @@ logger = logging.getLogger('cct')
 class ChangeProcessor(object):
     config = None
 
-    def __init__(self, config, modules_dir=[]):
+    def __init__(self, config, modules_dir):
         self.config = config
         self.modules_dir = modules_dir
 

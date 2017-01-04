@@ -23,7 +23,7 @@ logger = logging.getLogger('cct')
 
 class ChangeRunner(object):
 
-    def __init__(self, change, modules_dir=[]):
+    def __init__(self, change, modules_dir):
         self.change = change
         self.modules_dir = modules_dir
         self.modules = Modules(self.modules_dir)
