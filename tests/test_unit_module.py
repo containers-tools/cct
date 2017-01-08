@@ -2,6 +2,7 @@ import cct.module
 import os
 import unittest
 import shutil
+import tempfile
 
 from cct.errors import CCTError
 from cct.module import Modules
@@ -65,4 +66,19 @@ class TestModules(unittest.TestCase):
         chksum = "md5:foo"
         with self.assertRaises(CCTError):
             self.fetch_artifact(url, chksum)
-        
+
+    def test_module_deps(self):
+        url = "https://github.com/containers-tools/base"
+        version = None
+        deps = {
+            "dependencies": [
+                {
+                    "url": url,
+                    "version": version
+                }
+            ]
+        }
+        module = Module('foo')
+        module.directory = tempfile.mkdtemp()
+        module._process_deps(deps['dependencies'])
+        shutil.rmtree((module.directory))

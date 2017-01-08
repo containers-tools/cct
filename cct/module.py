@@ -115,7 +115,7 @@ class Module(object):
 
     def _process_module_config(self, config):
         self._process_artifacts(config['artifacts'])
-        self.deps = config['dependencies']
+        self._process_deps(config['dependencies'])
 
     def _process_operations(self, ops):
         for op in ops:
@@ -131,6 +131,8 @@ class Module(object):
         self.operations.append(operation)
 
     def _install(self, directory):
+        # we need to move it better place next time
+        self.directory = directory
         url = None
         version = None
         for op in self.operations:
@@ -138,8 +140,13 @@ class Module(object):
                 url = "".join(op.args)
             if op.command == 'version':
                 version = "".join(op.args)
+
+        self._get_module(url, version)
+
+    def _get_module(self, url, version):
         if url:
-            repo_dir = "%s/%s" % (directory, os.path.basename(url))
+            repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
+            logger.debug("Fetching into %s" % repo_dir)
             clone_repo(url, repo_dir, version)
         try:
             with open(os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
@@ -153,6 +160,12 @@ class Module(object):
             cct_resource = CctResource(**artifact)
             cct_resource.fetch()
 
+    def _process_deps(self, deps):
+        for dep in deps:
+            logger.debug("Fetching module from %s" % dep['url'])
+            module = Module(os.path.basename(dep['url']))
+            module.directory = self.directory
+            module._get_module(dep['url'], dep['version'] if 'version' in deps else None)
 
     def _replace_variables(self, string):
         result = ""
@@ -241,9 +254,10 @@ class CctResource(object):
         with open(self.filename, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):
                 hash.update(block)
-        if self.chksum[self.chksum.index(':')+1:] == hash.hexdigest():
+        if self.chksum[self.chksum.index(':') + 1:] == hash.hexdigest():
             return True
         raise CCTError("Resource from %s doenst match required chksum %s" % (self.url, self.chksum))
+
 
 class Operation(object):
     """
@@ -259,6 +273,7 @@ class Operation(object):
         if args:
             for arg in args:
                 self.args.append(arg.rstrip())
+
 
 class Modules(object):
     modules = {}
