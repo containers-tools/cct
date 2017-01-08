@@ -5,12 +5,17 @@ All rights reserved.
 This software may be modified and distributed under the terms
 of the MIT license. See the LICENSE file for details.
 """
+import hashlib
 import imp
 import inspect
 import logging
 import os
 import string
 import shlex
+try:
+    import urllib.request as urlrequest
+except ImportError:
+    import urllib as urlrequest
 import yaml
 
 from cct.errors import CCTError
@@ -145,12 +150,9 @@ class Module(object):
 
     def _process_artifacts(self, artifacts):
         for artifact in artifacts:
-            cct_resource = CctResource(artifact['name'],
-                                       artifact['md5sum'])
-            if 'handle' in artifact:
-                self.artifacts[artifact['handle']] = cct_resource
-            else:
-                self.artifacts[artifact['name']] = cct_resource
+            cct_resource = CctResource(**artifact)
+            cct_resource.fetch()
+
 
     def _replace_variables(self, string):
         result = ""
@@ -219,13 +221,29 @@ class CctResource(object):
     name - name of the file
     md5sum - md5sum
     """
-    name = None
-    md5sum = None
-
-    def __init__(self, name, md5sum):
+    def __init__(self, name, chksum, url):
         self.name = name
-        self.md5sum = md5sum
+        self.chksum = chksum
+        self.url = url
+        self.filename = os.path.basename(url)
 
+    def fetch(self):
+        logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
+        try:
+            urlrequest.urlretrieve(self.url, self.filename)
+        except Exception as ex:
+            raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
+        self.check_sum()
+
+    def check_sum(self):
+        logger.error(self.chksum[:self.chksum.index(':')])
+        hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
+        with open(self.filename, "rb") as f:
+            for block in iter(lambda: f.read(65536), b""):
+                hash.update(block)
+        if self.chksum[self.chksum.index(':')+1:] == hash.hexdigest():
+            return True
+        raise CCTError("Resource from %s doenst match required chksum %s" % (self.url, self.chksum))
 
 class Operation(object):
     """
@@ -242,9 +260,8 @@ class Operation(object):
             for arg in args:
                 self.args.append(arg.rstrip())
 
-
 class Modules(object):
-    modules = {}  # contains module name + its instance
+    modules = {}
 
     def __init__(self, modules_dir):
         # first we get builtin modules

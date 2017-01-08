@@ -1,7 +1,9 @@
 import cct.module
 import os
 import unittest
+import shutil
 
+from cct.errors import CCTError
 from cct.module import Modules
 from cct.module import Module
 
@@ -32,3 +34,35 @@ class TestModules(unittest.TestCase):
         dummy.environment = {"foohost": "barvalue"}
         os.environ['foohost'] = "foovalue"
         self.assertEquals(dummy.getenv("foohost"), "foovalue")
+
+    def fetch_artifact(self, url, chksum):
+        artifacts = {
+            "artifacts": [
+                {
+                    "url": url,
+                    "chksum": chksum,
+                    "name": "cct",
+                }
+            ]
+        }
+        module = Module("foo")
+        module._process_artifacts(artifacts['artifacts'])
+        os.remove(os.path.basename(url))
+
+    def test_artifacts_fetching(self):
+        url = "https://github.com/containers-tools/cct/archive/0.0.1.zip"
+        chksum = "md5:d3c3fbf21935119d808bfe29fa33509c"
+        self.fetch_artifact(url, chksum)
+
+    def test_artifacts_fetching_wrong_url(self):
+        url = "https://github.com/containers-tools/cct/archive/0.0.1.zip33"
+        chksum = "md5:d3c3fbf21935119d808bfe29fa33509c"
+        with self.assertRaises(CCTError):
+            self.fetch_artifact(url, chksum)
+
+    def test_artifacts_fetching_wrong_chksum(self):
+        url = "https://github.com/containers-tools/cct/archive/0.0.1.zip"
+        chksum = "md5:foo"
+        with self.assertRaises(CCTError):
+            self.fetch_artifact(url, chksum)
+        
