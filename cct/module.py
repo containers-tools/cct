@@ -33,6 +33,7 @@ class ChangeRunner(object):
         self.modules_dir = modules_dir
         self.modules = Modules(self.modules_dir)
         self.results = []
+        self.cct_resource = {}
 
     def run(self):
         for module in self.change.modules:
@@ -102,6 +103,7 @@ class Module(object):
         self.instance = None
         self.state = "NotRun"
         self.logger = logger
+        self.cct_resource = {}
 
     def getenv(self, name, default=None):
         if os.environ.get(name):
@@ -114,7 +116,7 @@ class Module(object):
         self.environment.update(env)
 
     def _process_module_config(self, config):
-        self._process_artifacts(config['artifacts'])
+        self._process_artifacts(config['artifacts'], config['path'])
         self._process_deps(config['dependencies'])
 
     def _process_operations(self, ops):
@@ -149,16 +151,18 @@ class Module(object):
             logger.debug("Fetching into %s" % repo_dir)
             clone_repo(url, repo_dir, version)
         try:
-            with open(os.path.join(os.path.dirname(inspect.getabsfile(self.__class__)),
-                      "module.yml")) as stream:
-                self._process_module_config(yaml.load(stream))
+            with open(os.path.join(os.path.dirname(repo_dir, "module.yml"))) as stream:
+                config = yaml.load(stream)
+                config["path"] = repo_path
+                self._process_module_config(config)
         except:
             pass
 
-    def _process_artifacts(self, artifacts):
+    def _process_artifacts(self, artifacts, path):
         for artifact in artifacts:
             cct_resource = CctResource(**artifact)
-            cct_resource.fetch()
+            cct_resource.fetch(path)
+            self.cct_resource[cct_resource.name] = cct_resource
 
     def _process_deps(self, deps):
         for dep in deps:
@@ -239,11 +243,14 @@ class CctResource(object):
         self.chksum = chksum
         self.url = url
         self.filename = os.path.basename(url)
+        self.path = None
 
-    def fetch(self):
+    def fetch(self, directory):
+        logger.debug("fetch to dir %s" % inspect.getmodule(self.__class__).__name__)
         logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
+        self.path = os.path.join(directory, self.filename)
         try:
-            urlrequest.urlretrieve(self.url, self.filename)
+            urlrequest.urlretrieve(self.url, self.path)
         except Exception as ex:
             raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
         self.check_sum()
@@ -251,7 +258,7 @@ class CctResource(object):
     def check_sum(self):
         logger.error(self.chksum[:self.chksum.index(':')])
         hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
-        with open(self.filename, "rb") as f:
+        with open(self.path, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):
                 hash.update(block)
         if self.chksum[self.chksum.index(':') + 1:] == hash.hexdigest():
