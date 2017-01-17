@@ -10,52 +10,24 @@ import imp
 import inspect
 import logging
 import os
-import string
 import shlex
-try:
-    import urllib.request as urlrequest
-except ImportError:
-    import urllib as urlrequest
+import string
+
 import yaml
+from pkg_resources import resource_string, resource_filename
 
 from cct.errors import CCTError
 from cct.lib import file_utils
 from cct.lib.git import clone_repo
-from pkg_resources import resource_string, resource_filename
+
+
+try:
+    import urllib.request as urlrequest
+except ImportError:
+    import urllib as urlrequest
+
 
 logger = logging.getLogger('cct')
-
-
-class ChangeRunner(object):
-
-    def __init__(self, change, modules_dir):
-        self.change = change
-        self.modules_dir = modules_dir
-        self.modules = Modules(self.modules_dir)
-        self.results = []
-        self.cct_resource = {}
-
-    def run(self):
-        for module in self.change.modules:
-            if module.name in self.modules.modules.keys():
-                module.instance = self.modules.modules[module.name]
-                runner = ModuleRunner(module)
-            else:
-                raise CCTError("no such module %s" % module.name)
-            try:
-                runner.run()
-                logger.info("module %s successfully processed all steps" % module.name)
-                self.results.append(module)
-            except:
-                logger.error("module %s failed processing steps" % module.name)
-                self.results.append(module)
-                raise
-
-    def print_result_report(self):
-        for module in self.results:
-            print("Processed module: %s" % module.name)
-            for operation in module.operations:
-                print("  %-30s: %s" % (operation.command, operation.state))
 
 
 class ModuleRunner(object):
@@ -82,15 +54,6 @@ class ModuleRunner(object):
                 raise e
         self.module.instance.teardown()
         self.state = "Passed"
-
-
-class Change(object):
-
-    def __init__(self, name, modules, description=None, environment=None):
-        self.name = name
-        self.description = description
-        self.modules = modules
-        self.environment = environment
 
 
 class Module(object):
@@ -142,21 +105,20 @@ class Module(object):
                 url = "".join(op.args)
             if op.command == 'version':
                 version = "".join(op.args)
-
-        self._get_module(url, version)
+        if url:
+            self._get_module(url, version)
 
     def _get_module(self, url, version):
-        if url:
-            repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
-            logger.debug("Fetching into %s" % repo_dir)
-            clone_repo(url, repo_dir, version)
+        repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
+        logger.debug("Fetching into %s" % repo_dir)
+        clone_repo(url, repo_dir, version)
         try:
-            with open(os.path.join(os.path.dirname(repo_dir, "module.yml"))) as stream:
+            with open(os.path.join(repo_dir, "module.yaml")) as stream:
                 config = yaml.load(stream)
-                config["path"] = repo_path
+                config["path"] = repo_dir
                 self._process_module_config(config)
-        except:
-            pass
+        except Exception as ex:
+            self.logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
 
     def _process_artifacts(self, artifacts, path):
         for artifact in artifacts:
@@ -327,7 +289,6 @@ class Modules(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    logger.info("found %s" % cls)
                     self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls
 
     def list(self):

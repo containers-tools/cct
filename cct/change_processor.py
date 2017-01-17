@@ -8,7 +8,8 @@ of the MIT license. See the LICENSE file for details.
 
 import logging
 
-from cct.module import Change, ChangeRunner, Module
+from cct.module import Module, Modules, ModuleRunner
+from cct.errors import CCTError
 
 logger = logging.getLogger('cct')
 
@@ -67,3 +68,43 @@ class ChangeProcessor(object):
                 raise
             finally:
                 runner.print_result_report()
+
+
+class Change(object):
+    def __init__(self, name, modules, description=None, environment=None):
+        self.name = name
+        self.description = description
+        self.modules = modules
+        self.environment = environment
+
+
+class ChangeRunner(object):
+
+    def __init__(self, change, modules_dir):
+        self.change = change
+        self.modules_dir = modules_dir
+        self.modules = Modules(self.modules_dir)
+        self.results = []
+        self.cct_resource = {}
+
+    def run(self):
+        for module in self.change.modules:
+            if module.name in self.modules.modules.keys():
+                module.instance = self.modules.modules[module.name]
+                runner = ModuleRunner(module)
+            else:
+                raise CCTError("no such module %s" % module.name)
+            try:
+                runner.run()
+                logger.info("module %s successfully processed all steps" % module.name)
+                self.results.append(module)
+            except:
+                logger.error("module %s failed processing steps" % module.name)
+                self.results.append(module)
+                raise
+
+    def print_result_report(self):
+        for module in self.results:
+            print("Processed module: %s" % module.name)
+            for operation in module.operations:
+                print("  %-30s: %s" % (operation.command, operation.state))
