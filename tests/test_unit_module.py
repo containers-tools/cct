@@ -5,16 +5,16 @@ import shutil
 import tempfile
 
 from cct.errors import CCTError
-from cct.module import Modules
 from cct.module import Module
+from cct.module import ModuleManager
 
 
 class TestModules(unittest.TestCase):
 
     def test_find_modules(self):
-        modules = Modules("dummy")
         path = os.path.abspath(os.path.dirname(cct.module.__file__)) + "/modules"
-        modules.find_modules(path)
+        module_manager = ModuleManager(path)
+        module_manager.discover_modules()
 
     def test_module_getenv_none(self):
         dummy = Module("dummy")
@@ -36,7 +36,7 @@ class TestModules(unittest.TestCase):
         os.environ['foohost'] = "foovalue"
         self.assertEquals(dummy.getenv("foohost"), "foovalue")
 
-    def fetch_artifact(self, url, chksum):
+    def get_artifact(self, url, chksum):
         artifacts = {
             "artifacts": [
                 {
@@ -47,27 +47,27 @@ class TestModules(unittest.TestCase):
             ]
         }
         module = Module("foo")
-        module._process_artifacts(artifacts['artifacts'], "/tmp")
+        module._get_artifacts(artifacts['artifacts'], "/tmp")
         os.remove(module.cct_resource['cct'].path)
 
     def test_artifacts_fetching(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip"
         chksum = "md5:d3c3fbf21935119d808bfe29fa33509c"
-        self.fetch_artifact(url, chksum)
+        self.get_artifact(url, chksum)
 
     def test_artifacts_fetching_wrong_url(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip33"
         chksum = "md5:d3c3fbf21935119d808bfe29fa33509c"
         with self.assertRaises(CCTError):
-            self.fetch_artifact(url, chksum)
+            self.get_artifact(url, chksum)
 
     def test_artifacts_fetching_wrong_chksum(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip"
         chksum = "md5:foo"
         with self.assertRaises(CCTError):
-            self.fetch_artifact(url, chksum)
+            self.get_artifact(url, chksum)
 
-    def test_module_deps(self):
+    def test_moudule_deps(self):
         url = "https://github.com/containers-tools/base"
         version = None
         deps = {
@@ -78,7 +78,7 @@ class TestModules(unittest.TestCase):
                 }
             ]
         }
-        module = Module('foo')
-        module.directory = tempfile.mkdtemp()
-        module._process_deps(deps['dependencies'])
-        shutil.rmtree((module.directory))
+        mod_dir = tempfile.mkdtemp()
+        module_manager = ModuleManager(mod_dir)
+        module_manager.process_module_deps(deps['dependencies'])
+        shutil.rmtree((mod_dir))

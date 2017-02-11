@@ -8,7 +8,7 @@ of the MIT license. See the LICENSE file for details.
 
 import logging
 
-from cct.module import Module, Modules, ModuleRunner
+from cct.module import ModuleManager, ModuleRunner
 from cct.errors import CCTError
 
 logger = logging.getLogger('cct')
@@ -46,19 +46,29 @@ class ChangeProcessor(object):
 
     def _process_change(self, change_cfg, fetch_only):
         logger.info("processing change %s" % change_cfg['name'])
-        change_modules = []
         change_env = self._create_env_dict(change_cfg.get('environment'))
         if 'description' not in change_cfg:
             change_cfg['description'] = None
+        mr = ModuleManager(self.modules_dir)
         for modules in change_cfg['changes']:
             for module_name, operations in modules.items():
-                module = Module(module_name)
+                url = None
+                ver = None
+                for op in operations:
+                    if 'url' in op:
+                        url = op['url']
+                    elif 'version' in op:
+                        ver = op['version']
+                if url:
+                    mr.install_module(url, ver)
+                else:
+                    if module_name not in mr.modules:
+                        raise Exception("Module %s cannot be found" % module_name)
+                module = mr.modules[module_name]
                 module._update_env(change_env)
                 module._process_operations(operations)
-                module._install(self.modules_dir)
-                change_modules.append(module)
-                module = None
-        change = Change(change_cfg['name'], change_modules, change_cfg['description'],
+
+        change = Change(change_cfg['name'], modules, change_cfg['description'],
                         change_env)
         if not fetch_only:
             runner = ChangeRunner(change, self.modules_dir)
@@ -73,8 +83,8 @@ class ChangeProcessor(object):
 class Change(object):
     def __init__(self, name, modules, description=None, environment=None):
         self.name = name
-        self.description = description
         self.modules = modules
+        self.description = description
         self.environment = environment
 
 
@@ -83,13 +93,14 @@ class ChangeRunner(object):
     def __init__(self, change, modules_dir):
         self.change = change
         self.modules_dir = modules_dir
-        self.modules = Modules(self.modules_dir)
+        self.modules = ModuleManager(self.modules_dir)
         self.results = []
         self.cct_resource = {}
 
     def run(self):
-        for module in self.change.modules:
-            if module.name in self.modules.modules.keys():
+        for name in self.change.modules:
+            if name in self.modules.modules:
+                module = self.modules.modules[name]
                 module.instance = self.modules.modules[module.name]
                 runner = ModuleRunner(module)
             else:

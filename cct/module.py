@@ -12,32 +12,137 @@ import logging
 import os
 import shlex
 import string
-
 import yaml
+
 from pkg_resources import resource_string, resource_filename
 
 from cct.errors import CCTError
 from cct.lib import file_utils
 from cct.lib.git import clone_repo
 
-
 try:
     import urllib.request as urlrequest
 except ImportError:
     import urllib as urlrequest
 
-
 logger = logging.getLogger('cct')
 
 
-class ModuleRunner(object):
+class ModuleManager(object):
+    modules = {}
 
+    def __init__(self, directory):
+        self.directory = directory
+
+    def discover_modules(self, directory=None):
+        directory = directory if directory is not None else self.directory
+        module_dirs = []
+        for root, _, files in os.walk(self.directory):
+            if 'module.yaml' in files:
+                module_dirs.append(root)
+
+        for mod_dir in module_dirs:
+            try:
+                with open(os.path.join(mod_dir, "module.yaml")) as stream:
+                    config = yaml.load(stream)
+                    if 'deps' in config:
+                        self.process_module_deps(config)
+                    self.find_modules(mod_dir, config['language'])
+            except Exception as ex:
+                logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
+
+    def install_module(self, url, version):
+        repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
+        logger.debug("Fetching into %s" % repo_dir)
+        clone_repo(url, repo_dir, version)
+        self.discover_modules(repo_dir)
+
+    def process_module_deps(self, deps):
+        for dep in deps:
+            print dep
+            logger.debug("Fetching module from %s" % dep['url'])
+            self.install_module(dep['url'], dep['version'] if 'version' in deps else None)
+
+    def find_modules(self, directory, language):
+        """
+        Finds all modules in the subdirs of directory
+        """
+        if not os.path.exists(directory):
+            return {}
+
+        if language is 'python':
+            extension = 'py'
+        elif language is 'bash':
+            extension = 'sh'
+        else:
+            extension = 'py'
+
+        logger.debug("discovering modules in %s" % directory)
+
+        def dirtest(x):
+            if x.startswith('.') or x.startswith('tests'):
+                logger.debug("find_modules: skipping {}".format(x))
+                return False
+            return True
+
+        def fileaction(candidate):
+            if candidate.endswith(extension) and os.path.isfile(candidate):
+                logger.debug("inspecting %s" % candidate)
+                try:
+                    self.check_module(candidate)
+                except Exception as e:
+                    logging.error("Cannot import module %s" % e, exc_info=True)
+
+        file_utils.find(directory, dirtest, fileaction)
+
+    def check_module(self, candidate):
+        module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
+        logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
+        module = imp.load_source(module_name, os.path.abspath(candidate))
+        # Get all classes from our module
+        for name, clazz in inspect.getmembers(module, inspect.isclass):
+            # Check that class is from our namespace
+            if module_name == clazz.__module__:
+                # Instantiate class
+                cls = getattr(module, name)
+                if issubclass(cls, Module):
+                    print(module_name)
+                    print(cls)
+                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__)
+
+    def list(self):
+        print("available cct modules:")
+        for module, _ in self.modules.iteritems():
+            print("  %s" % module)
+
+    def list_module_oper(self, name):
+        module = Module(name, None)
+        if module.name in self.modules.keys():
+            module.instance = self.modules[module.name]
+        else:
+            print("Module %s cannot be found!" % name)
+            return
+        print("Module %s contains commands: " % name)
+        module.instance = module.instance(name, None)
+
+        if getattr(module.instance, "setup").__doc__:
+            print("  setup: %s " % getattr(module.instance, "setup").__doc__)
+
+        for method in dir(module.instance):
+            if callable(getattr(module.instance, method)):
+                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'url', 'version', 'teardown']:
+                    print("  %s: %s" % (method, getattr(module.instance, method).__doc__))
+
+        if getattr(module.instance, "teardown").__doc__:
+            print("  teardown: %s " % getattr(module.instance, "teardown").__doc__)
+
+
+class ModuleRunner(object):
     def __init__(self, module):
         self.module = module
         self.state = "Processing"
 
     def run(self):
-        self.module.instance = self.module.instance(self.module.name)
         self.module.instance.setup()
         for operation in self.module.operations:
             if operation.command in ['setup', 'run', 'url', 'version', 'teardown']:
@@ -75,12 +180,14 @@ class Module(object):
             return self.environment[name]
         return default
 
+    def _get_artifacts(self, artifacts, path):
+        for artifact in artifacts:
+            cct_resource = CctResource(**artifact)
+            cct_resource.fetch(path)
+            self.cct_resource[cct_resource.name] = cct_resource
+
     def _update_env(self, env):
         self.environment.update(env)
-
-    def _process_module_config(self, config):
-        self._process_artifacts(config['artifacts'], config['path'])
-        self._process_deps(config['dependencies'])
 
     def _process_operations(self, ops):
         for op in ops:
@@ -94,44 +201,6 @@ class Module(object):
     def _add_operation(self, name, args):
         operation = Operation(name, shlex.split(str(args)) if args else None)
         self.operations.append(operation)
-
-    def _install(self, directory):
-        # we need to move it better place next time
-        self.directory = directory
-        url = None
-        version = None
-        for op in self.operations:
-            if op.command == 'url':
-                url = "".join(op.args)
-            if op.command == 'version':
-                version = "".join(op.args)
-        if url:
-            self._get_module(url, version)
-
-    def _get_module(self, url, version):
-        repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
-        logger.debug("Fetching into %s" % repo_dir)
-        clone_repo(url, repo_dir, version)
-        try:
-            with open(os.path.join(repo_dir, "module.yaml")) as stream:
-                config = yaml.load(stream)
-                config["path"] = repo_dir
-                self._process_module_config(config)
-        except Exception as ex:
-            self.logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
-
-    def _process_artifacts(self, artifacts, path):
-        for artifact in artifacts:
-            cct_resource = CctResource(**artifact)
-            cct_resource.fetch(path)
-            self.cct_resource[cct_resource.name] = cct_resource
-
-    def _process_deps(self, deps):
-        for dep in deps:
-            logger.debug("Fetching module from %s" % dep['url'])
-            module = Module(os.path.basename(dep['url']))
-            module.directory = self.directory
-            module._get_module(dep['url'], dep['version'] if 'version' in deps else None)
 
     def _replace_variables(self, string):
         result = ""
@@ -242,77 +311,3 @@ class Operation(object):
         if args:
             for arg in args:
                 self.args.append(arg.rstrip())
-
-
-class Modules(object):
-    modules = {}
-
-    def __init__(self, modules_dir):
-        # first we get builtin modules
-        self.find_modules(os.path.join(os.path.dirname(__file__), 'modules'))
-        # then fetched modules
-        self.find_modules(modules_dir)
-
-    def find_modules(self, directory):
-        """
-        Finds all modules in the subdirs of directory
-        """
-        if not os.path.exists(directory):
-            return
-
-        logger.debug("discovering modules in %s" % directory)
-
-        def dirtest(x):
-            if x.startswith('.') or x.startswith('tests'):
-                logger.debug("find_modules: skipping {}".format(x))
-                return False
-            return True
-
-        def fileaction(candidate):
-            if candidate.endswith(".py") and os.path.isfile(candidate):
-                logger.debug("inspecting %s" % candidate)
-                try:
-                    self.check_module(candidate)
-                except Exception as e:
-                    logging.error("Cannot import module %s" % e, exc_info=True)
-
-        file_utils.find(directory, dirtest, fileaction)
-
-    def check_module(self, candidate):
-        module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
-        logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
-        module = imp.load_source(module_name, os.path.abspath(candidate))
-        # Get all classes from our module
-        for name, clazz in inspect.getmembers(module, inspect.isclass):
-            # Check that class is from our namespace
-            if module_name == clazz.__module__:
-                # Instantiate class
-                cls = getattr(module, name)
-                if issubclass(cls, Module):
-                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls
-
-    def list(self):
-        print("available cct modules:")
-        for module, _ in self.modules.iteritems():
-            print("  %s" % module)
-
-    def list_module_oper(self, name):
-        module = Module(name, None)
-        if module.name in self.modules.keys():
-            module.instance = self.modules[module.name]
-        else:
-            print("Module %s cannot be found!" % name)
-            return
-        print("Module %s contains commands: " % name)
-        module.instance = module.instance(name, None)
-
-        if getattr(module.instance, "setup").__doc__:
-            print("  setup: %s " % getattr(module.instance, "setup").__doc__)
-
-        for method in dir(module.instance):
-            if callable(getattr(module.instance, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'url', 'version', 'teardown']:
-                    print("  %s: %s" % (method, getattr(module.instance, method).__doc__))
-
-        if getattr(module.instance, "teardown").__doc__:
-            print("  teardown: %s " % getattr(module.instance, "teardown").__doc__)

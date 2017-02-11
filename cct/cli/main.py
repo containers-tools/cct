@@ -14,8 +14,8 @@ import sys
 import urllib2
 
 from cct import setup_logging, version
-from cct.module import Modules
 from cct.change_processor import ChangeProcessor
+from cct.module import ModuleManager
 from urlparse import urlparse
 logger = logging.getLogger('cct')
 
@@ -90,7 +90,7 @@ class CCT_CLI(object):
             setup_logging(level=logging.ERROR)
         else:
             setup_logging(level=logging.INFO)
-        modules = Modules(args.modules_dir)
+        modules = ModuleManager(args.modules_dir)
         if args.list:
             modules.list()
         elif args.show:
