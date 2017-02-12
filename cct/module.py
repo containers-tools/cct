@@ -70,13 +70,6 @@ class ModuleManager(object):
         if not os.path.exists(directory):
             return {}
 
-        if language is 'python':
-            extension = 'py'
-        elif language is 'bash':
-            extension = 'sh'
-        else:
-            extension = 'py'
-
         logger.debug("discovering modules in %s" % directory)
 
         def dirtest(x):
@@ -93,7 +86,15 @@ class ModuleManager(object):
                 except Exception as e:
                     logging.error("Cannot import module %s" % e, exc_info=True)
 
-        file_utils.find(directory, dirtest, fileaction)
+        if 'bash' in language:
+            extension = 'sh'
+            file_utils.find(directory, dirtest, fileaction)
+        elif 'python' in language:
+            extension = 'py'
+            file_utils.find(directory, dirtest, fileaction)
+        else:
+            extension = 'py'
+            file_utils.find(directory, dirtest, fileaction)
 
     def check_module(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
