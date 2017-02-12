@@ -10,8 +10,10 @@ import imp
 import inspect
 import logging
 import os
+import re
 import shlex
 import string
+import subprocess
 import yaml
 
 from pkg_resources import resource_string, resource_filename
@@ -59,7 +61,6 @@ class ModuleManager(object):
 
     def process_module_deps(self, deps):
         for dep in deps:
-            print dep
             logger.debug("Fetching module from %s" % dep['url'])
             self.install_module(dep['url'], dep['version'] if 'version' in deps else None)
 
@@ -82,21 +83,24 @@ class ModuleManager(object):
             if candidate.endswith(extension) and os.path.isfile(candidate):
                 logger.debug("inspecting %s" % candidate)
                 try:
-                    self.check_module(candidate)
+                    if extension is 'py':
+                        self.check_module_py(candidate)
+                    elif extension is 'sh':
+                        self.check_module_sh(candidate)
                 except Exception as e:
                     logging.error("Cannot import module %s" % e, exc_info=True)
 
         if 'bash' in language:
             extension = 'sh'
             file_utils.find(directory, dirtest, fileaction)
-        elif 'python' in language:
+        if 'python' in language:
             extension = 'py'
             file_utils.find(directory, dirtest, fileaction)
         else:
             extension = 'py'
             file_utils.find(directory, dirtest, fileaction)
 
-    def check_module(self, candidate):
+    def check_module_py(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
         logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
         module = imp.load_source(module_name, os.path.abspath(candidate))
@@ -107,9 +111,13 @@ class ModuleManager(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    print(module_name)
-                    print(cls)
                     self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__)
+
+    def check_module_sh(self, candidate):
+        module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
+        logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
+        name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
+        self.modules[name] = ShellModule(name, candidate)
 
     def list(self):
         print("available cct modules:")
@@ -312,3 +320,49 @@ class Operation(object):
         if args:
             for arg in args:
                 self.args.append(arg.rstrip())
+
+
+class ShellModule(Module):
+
+    def __init__(self, name, path):
+        Module.__init__(self, name)
+        self.script = path
+        self._discover()
+
+    def __getattr__(self, name):
+        def wrapper(*args, **kwargs):
+            if name in self.names:
+                self._run_function(name, *args)
+            else:
+                raise Exception("no such method")
+        return wrapper
+
+    def _discover(self):
+        self.names = {}
+        comment = ""
+        param = re.compile("\$\d+")
+        with open(self.script, "r") as f:
+            name = ""
+            for line in f:
+                if line.startswith('#'):
+                    comment += line[1:]
+                elif 'function' in line:
+                    name = line.split()[1][:-2]
+                    function = {"name": name,
+                                "comment": comment,
+                                "params": {}}
+                    self.names[name] = function
+                elif param.search(line):
+                    param_name = line.split('=')[0].split()[-1]
+                    self.logger.debug("function: %s, param_id: %s, param_name: %s"
+                                      % (name, param_name, param.search(line).group(0)))
+                    self.names[name]["params"][param_name] = param.search(line).group(0)
+                else:
+                    comment = ""
+
+    def _run_function(self, name, *args):
+        cmd = '/bin/bash -c " source %s ; %s %s"' % (self.script, name, " ".join(args))
+        try:
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+        except subprocess.CalledProcessError as e:
+            raise CCTError(e.output)

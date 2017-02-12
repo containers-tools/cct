@@ -50,6 +50,7 @@ class ChangeProcessor(object):
         if 'description' not in change_cfg:
             change_cfg['description'] = None
         mr = ModuleManager(self.modules_dir)
+        mr.discover_modules()
         for modules in change_cfg['changes']:
             for module_name, operations in modules.items():
                 url = None
