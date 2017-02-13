@@ -363,6 +363,7 @@ class ShellModule(Module):
     def _run_function(self, name, *args):
         cmd = '/bin/bash -c " source %s ; %s %s"' % (self.script, name, " ".join(args))
         try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+            env = {'CCT_MODULE_PATH': os.path.dirname(self.script)}
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
         except subprocess.CalledProcessError as e:
             raise CCTError(e.output)
