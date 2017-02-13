@@ -48,7 +48,7 @@ class ModuleManager(object):
                 with open(os.path.join(mod_dir, "module.yaml")) as stream:
                     config = yaml.load(stream)
                     if 'deps' in config:
-                        self.process_module_deps(config)
+                        self.process_module_deps(config['deps'])
                     self.find_modules(mod_dir, config['language'])
             except Exception as ex:
                 logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
@@ -111,13 +111,13 @@ class ModuleManager(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__)
+                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate))
 
     def check_module_sh(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
         logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
         name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
-        self.modules[name] = ShellModule(name, candidate)
+        self.modules[name] = ShellModule(name, os.path.dirname(candidate), candidate)
 
     def list(self):
         print("available cct modules:")
@@ -172,7 +172,7 @@ class ModuleRunner(object):
 
 class Module(object):
 
-    def __init__(self, name):
+    def __init__(self, name, directory):
         self.name = name
         self.environment = {}
         self.deps = []
@@ -181,6 +181,13 @@ class Module(object):
         self.state = "NotRun"
         self.logger = logger
         self.cct_resource = {}
+        try:
+            with open(os.path.join(directory, "module.yaml")) as stream:
+                config = yaml.load(stream)
+                if 'artifacts' in config:
+                    self._get_artifacts(config['artifacts'], directory)
+        except Exception as ex:
+            logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
 
     def getenv(self, name, default=None):
         if os.environ.get(name):
@@ -188,12 +195,6 @@ class Module(object):
         if name in self.environment:
             return self.environment[name]
         return default
-
-    def _get_artifacts(self, artifacts, path):
-        for artifact in artifacts:
-            cct_resource = CctResource(**artifact)
-            cct_resource.fetch(path)
-            self.cct_resource[cct_resource.name] = cct_resource
 
     def _update_env(self, env):
         self.environment.update(env)
@@ -226,6 +227,12 @@ class Module(object):
                     token = self.environment[var_name]
             result += token + " "
         return result
+
+    def _get_artifacts(self, artifacts, destination):
+        for artifact in artifacts:
+            cct_resource = CctResource(**artifact)
+            cct_resource.fetch(destination)
+            self.cct_resource[cct_resource.name] = cct_resource
 
     def setup(self):
         pass
@@ -281,13 +288,14 @@ class CctResource(object):
     def __init__(self, name, chksum, url):
         self.name = name
         self.chksum = chksum
-        self.url = url
+        self.url = self.replace_variables(url) if '$' in url else url
         self.filename = os.path.basename(url)
         self.path = None
 
     def fetch(self, directory):
         logger.debug("fetch to dir %s" % inspect.getmodule(self.__class__).__name__)
         logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
+
         self.path = os.path.join(directory, self.filename)
         try:
             urlrequest.urlretrieve(self.url, self.path)
@@ -304,6 +312,14 @@ class CctResource(object):
         if self.chksum[self.chksum.index(':') + 1:] == hash.hexdigest():
             return True
         raise CCTError("Resource from %s doenst match required chksum %s" % (self.url, self.chksum))
+
+    def replace_variables(self, string):
+        var_regex = re.compile('\$\{.*\}')
+        variable = var_regex.search(string).group(0)[2:-1]
+        if os.environ.get(variable):
+            logger.info("Using host variable %s" % variable)
+            string = var_regex.sub(os.environ[variable], string)
+        return string
 
 
 class Operation(object):
@@ -324,8 +340,8 @@ class Operation(object):
 
 class ShellModule(Module):
 
-    def __init__(self, name, path):
-        Module.__init__(self, name)
+    def __init__(self, name, directory, path):
+        Module.__init__(self, name, directory)
         self.script = path
         self._discover()
 
@@ -364,6 +380,8 @@ class ShellModule(Module):
         cmd = '/bin/bash -c " source %s ; %s %s"' % (self.script, name, " ".join(args))
         try:
             env = {'CCT_MODULE_PATH': os.path.dirname(self.script)}
+            for name, res in self.cct_resource.items():
+                env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
         except subprocess.CalledProcessError as e:
             raise CCTError(e.output)
