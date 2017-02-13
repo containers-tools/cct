@@ -125,25 +125,24 @@ class ModuleManager(object):
             print("  %s" % module)
 
     def list_module_oper(self, name):
-        module = Module(name, None)
-        if module.name in self.modules.keys():
-            module.instance = self.modules[module.name]
-        else:
+        module = None
+        if not name in self.modules:
             print("Module %s cannot be found!" % name)
-            return
+            exit(1)
+        else:
+            module = self.modules[name]
         print("Module %s contains commands: " % name)
-        module.instance = module.instance(name, None)
 
-        if getattr(module.instance, "setup").__doc__:
-            print("  setup: %s " % getattr(module.instance, "setup").__doc__)
+        if getattr(module, "setup").__doc__:
+            print("  setup: %s " % getattr(module, "setup").__doc__)
 
-        for method in dir(module.instance):
-            if callable(getattr(module.instance, method)):
+        for method in dir(module):
+            if callable(getattr(module, method)):
                 if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'url', 'version', 'teardown']:
-                    print("  %s: %s" % (method, getattr(module.instance, method).__doc__))
+                    print("  %s: %s" % (method, getattr(module, method).__doc__))
 
-        if getattr(module.instance, "teardown").__doc__:
-            print("  teardown: %s " % getattr(module.instance, "teardown").__doc__)
+        if getattr(module, "teardown").__doc__:
+            print("  teardown: %s " % getattr(module, "teardown").__doc__)
 
 
 class ModuleRunner(object):
@@ -304,7 +303,6 @@ class CctResource(object):
         self.check_sum()
 
     def check_sum(self):
-        logger.error(self.chksum[:self.chksum.index(':')])
         hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
         with open(self.path, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):

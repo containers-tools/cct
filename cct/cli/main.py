@@ -92,8 +92,10 @@ class CCT_CLI(object):
             setup_logging(level=logging.INFO)
         modules = ModuleManager(args.modules_dir)
         if args.list:
+            modules.discover_modules()
             modules.list()
         elif args.show:
+            modules.discover_modules()
             modules.list_module_oper(args.show)
         else:
             # env changes overrides cmdline ones
