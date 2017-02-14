@@ -42,9 +42,9 @@ class TestModule(unittest.TestCase):
     def test_fetch_modules(self):
         config = [{
             'changes': [{'base.Dummy': [{'dump': 493}]},
-                        {'base.Shell': [{'shell': 'echo'},
-                                        {'url': 'https://github.com/containers-tools/base'}]}],
-            'name': 'dummy'
+                        {'base.Shell': [{'shell': 'echo'}]}],
+            'name': 'dummy',
+            'modules': [ {'url': 'https://github.com/containers-tools/base'}]
         }]
         destination = tempfile.mkdtemp()
         changeProcessor = ChangeProcessor(config, destination)
