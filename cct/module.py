@@ -181,6 +181,8 @@ class Module(object):
         self.state = "NotRun"
         self.logger = logger
         self.cct_resource = {}
+        if name == 'base.Dummy':
+            return
         try:
             with open(os.path.join(directory, "module.yaml")) as stream:
                 config = yaml.load(stream)
