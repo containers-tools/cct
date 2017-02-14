@@ -17,21 +17,21 @@ class TestModules(unittest.TestCase):
         module_manager.discover_modules()
 
     def test_module_getenv_none(self):
-        dummy = Module("dummy")
+        dummy = Module("dummy", "")
         self.assertIsNone(dummy.getenv("bar"))
 
     def test_module_getenv(self):
-        dummy = Module("dummy")
+        dummy = Module("dummy", "")
         dummy.environment = {"foo": "foovalue"}
         self.assertEquals(dummy.getenv("foo"), "foovalue")
 
     def test_module_getenv_form_host(self):
-        dummy = Module("dummy")
+        dummy = Module("dummy", "")
         os.environ['foo'] = "foovalue"
         self.assertEquals(dummy.getenv("foo"), "foovalue")
 
     def test_module_getenv_override(self):
-        dummy = Module("dummy")
+        dummy = Module("dummy", "")
         dummy.environment = {"foohost": "barvalue"}
         os.environ['foohost'] = "foovalue"
         self.assertEquals(dummy.getenv("foohost"), "foovalue")
@@ -46,7 +46,7 @@ class TestModules(unittest.TestCase):
                 }
             ]
         }
-        module = Module("foo")
+        module = Module("foo", "/tmp")
         module._get_artifacts(artifacts['artifacts'], "/tmp")
         os.remove(module.cct_resource['cct'].path)
 

@@ -35,6 +35,7 @@ class ModuleManager(object):
 
     def __init__(self, directory):
         self.directory = directory
+        self.modules['base.Dummy'] = Dummy('base.Dummy', os.path.dirname(__file__))
 
     def discover_modules(self, directory=None):
         directory = directory if directory is not None else self.directory
@@ -126,7 +127,7 @@ class ModuleManager(object):
 
     def list_module_oper(self, name):
         module = None
-        if not name in self.modules:
+        if name not in self.modules:
             print("Module %s cannot be found!" % name)
             exit(1)
         else:
@@ -383,3 +384,14 @@ class ShellModule(Module):
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
         except subprocess.CalledProcessError as e:
             raise CCTError(e.output)
+
+
+class Dummy(Module):
+    def dump(self, *args):
+        """
+        Dumps arguments to a logfile.
+
+        Args:
+         *args: Will be dumped :).
+        """
+        logger.info("dummy module performed dump with args %s and environment: %s" % (args, self.environment))
