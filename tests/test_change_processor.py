@@ -6,38 +6,50 @@ This software may be modified and distributed under the terms
 of the MIT license. See the LICENSE file for details.
 """
 
-import os
 import unittest
-import mock
+import shutil
+import tempfile
 
 from cct.change_processor import ChangeProcessor
 
+
 class TestModule(unittest.TestCase):
-    def setUp(self):
-        os.environ['CCT_MODULES_PATH'] = 'tests/modules'
 
     def test_process_string_values(self):
         """
         Make sure that changes that have string values are accepted
         """
         config = [{
-            'changes': [{'dummy.Dummy': [{'dump': '493'}]}],
+            'changes': [{'base.Dummy': [{'dump': '493'}]}],
             'name': 'dummy'
         }]
-        changerunner = ChangeProcessor(config)
-        changerunner.process()
-
+        changeProcessor = ChangeProcessor(config, 'foo')
+        changeProcessor.process()
 
     def test_process_int_values(self):
         """
         Make sure that changes that have integer values are accepted
         """
         config = [{
-            'changes': [{'dummy.Dummy': [{'dump': 493}]}],
+            'changes': [{'base.Dummy': [{'dump': 493}, {'dump': 'foo'}]},
+                        {'base.Dummy': [{'dump': 567}]},
+                        {'base.Dummy': [{'dump': 123}]}],
             'name': 'dummy'
         }]
-        changerunner = ChangeProcessor(config)
-        changerunner.process()
+        changeProcessor = ChangeProcessor(config, '/foo')
+        changeProcessor.process()
+
+    def test_fetch_modules(self):
+        config = [{
+            'changes': [{'base.Dummy': [{'dump': 493}]},
+                        {'base.Shell': [{'shell': 'echo'},
+                                        {'url': 'https://github.com/containers-tools/base'}]}],
+            'name': 'dummy'
+        }]
+        destination = tempfile.mkdtemp()
+        changeProcessor = ChangeProcessor(config, destination)
+        changeProcessor.process(fetch_only=False)
+        shutil.rmtree(destination)
 
 if __name__ == '__main__':
     unittest.main()

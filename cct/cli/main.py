@@ -14,23 +14,26 @@ import sys
 import urllib2
 
 from cct import setup_logging, version
-from cct.module import Modules
 from cct.change_processor import ChangeProcessor
+from cct.module import ModuleManager
 from urlparse import urlparse
 logger = logging.getLogger('cct')
 
-class MyParser(argparse.ArgumentParser):
 
+class MyParser(argparse.ArgumentParser):
     def error(self, message):
         self.print_help()
         sys.stderr.write('\nError: %s\n' % message)
         sys.exit(2)
+
 
 class CCT_CLI(object):
     def __init__(self):
         self.parser = MyParser(description='Container configuration tool')
 
     def setup_arguments(self):
+        self.parser.add_argument('--fetch-only', action="store_true", help="cct will fetch modules and artifacts only")
+        self.parser.add_argument('--modules-dir', nargs='?', default="%s/%s" % (os.getcwd(), 'modules'), help='directory from where modules are executed')
         self.parser.add_argument('-v', '--verbose', action="store_true", help='verbose output')
         self.parser.add_argument('-q', '--quiet', action="store_true", help='set quiet output')
         self.parser.add_argument('changes', help='YAML files to process', nargs="*")
@@ -42,36 +45,34 @@ class CCT_CLI(object):
 
     def exec_command(self, command):
         if command[1:]:
-            logger.info("executing command %s with args %s" %(command[0], " ".join(command[1:])))
+            logger.info("executing command %s with args %s" % (command[0], " ".join(command[1:])))
         else:
-            logger.info("executing command %s" %command[0])
+            logger.info("executing command %s" % command[0])
         os.execvp(command[0], command)
 
     def process_url(self, url):
         response = urllib2.urlopen(url)
-        change = yaml.load(response.read())
-        cp = ChangeProcessor(change)
-        cp.process()
+        return yaml.load(response.read())
 
     def process_file(self, file):
         stream = open(file, 'r')
-        change = yaml.load(stream)
-        cp = ChangeProcessor(change)
-        cp.process()
+        return yaml.load(stream)
 
-    def process_changes(self, changes):
+    def process_changes(self, changes, modules_dir, fetch_only):
         for change in changes:
             if change is '':
                 continue
             scheme = urlparse(change).scheme
             if 'http' in scheme:
-                self.process_url(change)
+                change = self.process_url(change)
             else:
-                self.process_file(change)
+                change = self.process_file(change)
+            cp = ChangeProcessor(change, modules_dir)
+            cp.process(fetch_only)
 
     def run(self):
         self.setup_arguments()
-        env_changes=None
+        env_changes = None
         changes = []
         try:
             env_changes = os.environ['CCT_CHANGES']
@@ -89,22 +90,23 @@ class CCT_CLI(object):
             setup_logging(level=logging.ERROR)
         else:
             setup_logging(level=logging.INFO)
+        modules = ModuleManager(args.modules_dir)
         if args.list:
-            modules = Modules()
+            modules.discover_modules()
             modules.list()
         elif args.show:
-            modules = Modules()
+            modules.discover_modules()
             modules.list_module_oper(args.show)
         else:
-            ## env changes overrides cmdline ones
-            ## seems odd but really needed for containers - changes are passed
-            ## via docker run -e
+            # env changes overrides cmdline ones
+            # seems odd but really needed for containers - changes are passed
+            # via docker run -e
             if env_changes:
                 changes += env_changes.split()
             else:
                 changes += args.changes
             try:
-                self.process_changes(changes)
+                self.process_changes(changes, args.modules_dir, args.fetch_only)
             except KeyboardInterrupt:
                 pass
             except Exception as ex:
@@ -117,7 +119,7 @@ class CCT_CLI(object):
 
 
 def run():
-    cli=CCT_CLI()
+    cli = CCT_CLI()
     cli.run()
 
 if __name__ == '__main__':
