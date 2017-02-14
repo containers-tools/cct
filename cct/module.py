@@ -181,6 +181,8 @@ class Module(object):
         self.state = "NotRun"
         self.logger = logger
         self.cct_resource = {}
+        if name == 'base.Dummy':
+            return
         try:
             with open(os.path.join(directory, "module.yaml")) as stream:
                 config = yaml.load(stream)
@@ -382,7 +384,8 @@ class ShellModule(Module):
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
             for name, res in self.cct_resource.items():
                 env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
+            self.logger.debug("Step ended with output: %s" % out)
         except subprocess.CalledProcessError as e:
             raise CCTError(e.output)
 
