@@ -378,7 +378,8 @@ class ShellModule(Module):
     def _run_function(self, name, *args):
         cmd = '/bin/bash -c " source %s ; %s %s"' % (self.script, name, " ".join(args))
         try:
-            env = {'CCT_MODULE_PATH': os.path.dirname(self.script)}
+            env = dict(os.environ)
+            env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
             for name, res in self.cct_resource.items():
                 env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
             subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
