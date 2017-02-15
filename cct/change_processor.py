@@ -8,8 +8,7 @@ of the MIT license. See the LICENSE file for details.
 
 import logging
 
-from cct.module import ModuleManager, ModuleRunner
-from cct.errors import CCTError
+from cct.module import ModuleManager, ModuleRunner, Module
 
 logger = logging.getLogger('cct')
 
@@ -50,26 +49,24 @@ class ChangeProcessor(object):
         if 'description' not in change_cfg:
             change_cfg['description'] = None
         mr = ModuleManager(self.modules_dir)
-        mr.discover_modules()
+
+        if 'modules' in change_cfg:
+            for module in change_cfg['modules']:
+                url = module['url']
+                ver = module['version'] if 'version' in module else None
+                mr.install_module(url, ver)
+
+        steps = []
         for modules in change_cfg['changes']:
             for module_name, operations in modules.items():
-                url = None
-                ver = None
-                for op in operations:
-                    if 'url' in op:
-                        url = op['url']
-                    elif 'version' in op:
-                        ver = op['version']
-                if url:
-                    mr.install_module(url, ver)
-                else:
-                    if module_name not in mr.modules:
+                if module_name not in mr.modules:
                         raise Exception("Module %s cannot be found" % module_name)
-                module = mr.modules[module_name]
+                module = Module(module_name, None)
+                module.instance = mr.modules[module_name]
                 module._update_env(change_env)
                 module._process_operations(operations)
-
-        change = Change(change_cfg['name'], modules, change_cfg['description'],
+                steps.append(module)
+        change = Change(change_cfg['name'], steps, change_cfg['description'],
                         change_env)
         if not fetch_only:
             runner = ChangeRunner(change, self.modules_dir)
@@ -99,14 +96,9 @@ class ChangeRunner(object):
         self.cct_resource = {}
 
     def run(self):
-        for name in self.change.modules:
-            if name in self.modules.modules:
-                module = self.modules.modules[name]
-                module.instance = self.modules.modules[module.name]
-                runner = ModuleRunner(module)
-            else:
-                raise CCTError("no such module %s" % module.name)
+        for module in self.change.modules:
             try:
+                runner = ModuleRunner(module)
                 runner.run()
                 logger.info("module %s successfully processed all steps" % module.name)
                 self.results.append(module)

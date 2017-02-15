@@ -8,6 +8,7 @@ of the MIT license. See the LICENSE file for details.
 import hashlib
 import imp
 import inspect
+import glob
 import logging
 import os
 import re
@@ -19,7 +20,6 @@ import yaml
 from pkg_resources import resource_string, resource_filename
 
 from cct.errors import CCTError
-from cct.lib import file_utils
 from cct.lib.git import clone_repo
 
 try:
@@ -35,12 +35,12 @@ class ModuleManager(object):
 
     def __init__(self, directory):
         self.directory = directory
-        self.modules['base.Dummy'] = Dummy('base.Dummy', os.path.dirname(__file__))
+        self.modules['base.Dummy'] = Dummy('base.Dummy', None)
 
     def discover_modules(self, directory=None):
         directory = directory if directory is not None else self.directory
         module_dirs = []
-        for root, _, files in os.walk(self.directory):
+        for root, _, files in os.walk(directory):
             if 'module.yaml' in files:
                 module_dirs.append(root)
 
@@ -74,32 +74,14 @@ class ModuleManager(object):
 
         logger.debug("discovering modules in %s" % directory)
 
-        def dirtest(x):
-            if x.startswith('.') or x.startswith('tests'):
-                logger.debug("find_modules: skipping {}".format(x))
-                return False
-            return True
-
-        def fileaction(candidate):
-            if candidate.endswith(extension) and os.path.isfile(candidate):
-                logger.debug("inspecting %s" % candidate)
-                try:
-                    if extension is 'py':
-                        self.check_module_py(candidate)
-                    elif extension is 'sh':
-                        self.check_module_sh(candidate)
-                except Exception as e:
-                    logging.error("Cannot import module %s" % e, exc_info=True)
-
         if 'bash' in language:
-            extension = 'sh'
-            file_utils.find(directory, dirtest, fileaction)
-        if 'python' in language:
-            extension = 'py'
-            file_utils.find(directory, dirtest, fileaction)
+            pattern = os.path.join(os.path.abspath(directory), '*.sh')
+            for candidate in glob.glob(pattern):
+                self.check_module_sh(candidate)
         else:
-            extension = 'py'
-            file_utils.find(directory, dirtest, fileaction)
+            pattern = os.path.join(os.path.abspath(directory), '*.py')
+            for candidate in glob.glob(pattern):
+                self.check_module_py(candidate)
 
     def check_module_py(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
@@ -156,7 +138,7 @@ class ModuleRunner(object):
         for operation in self.module.operations:
             if operation.command in ['setup', 'run', 'url', 'version', 'teardown']:
                 continue
-            self.module._process_environment(operation)
+            self.module.instance._process_environment(operation)
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
                 self.module.instance.run(operation)
@@ -181,7 +163,7 @@ class Module(object):
         self.state = "NotRun"
         self.logger = logger
         self.cct_resource = {}
-        if name == 'base.Dummy':
+        if not directory:
             return
         try:
             with open(os.path.join(directory, "module.yaml")) as stream:
