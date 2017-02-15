@@ -282,8 +282,8 @@ class CctResource(object):
 
         self.path = os.path.join(directory, self.filename)
 
-        if os.path.exists(self.path) and self.check_sum():
-            logger.debug("using cached artifact for %s" % self.name)
+        if self.check_sum():
+            logger.debug("Using cached artifact for %s" % self.name)
             return
 
         try:
@@ -292,9 +292,11 @@ class CctResource(object):
             raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
 
         if not self.check_sum():
-            raise CCTError("Resource from %s doenst match required chksum %s" % (self.url, self.chksum))
+            raise CCTError("Resource from %s doesn't match required chksum %s" % (self.url, self.chksum))
 
     def check_sum(self):
+        if not os.path.exists(self.path):
+            return False
         hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
         with open(self.path, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):
