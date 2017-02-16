@@ -27,5 +27,3 @@ def setup_logging(name="cct", level=logging.DEBUG):
 
     # add ch to logger
     logger.addHandler(ch)
-
-setup_logging(level=logging.DEBUG)  # override this however you want
