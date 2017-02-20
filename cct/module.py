@@ -281,20 +281,29 @@ class CctResource(object):
         logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
 
         self.path = os.path.join(directory, self.filename)
+
+        if self.check_sum():
+            logger.debug("Using cached artifact for %s" % self.name)
+            return
+
         try:
             urlrequest.urlretrieve(self.url, self.path)
         except Exception as ex:
             raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
-        self.check_sum()
+
+        if not self.check_sum():
+            raise CCTError("Resource from %s doesn't match required chksum %s" % (self.url, self.chksum))
 
     def check_sum(self):
+        if not os.path.exists(self.path):
+            return False
         hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
         with open(self.path, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):
                 hash.update(block)
         if self.chksum[self.chksum.index(':') + 1:] == hash.hexdigest():
             return True
-        raise CCTError("Resource from %s doenst match required chksum %s" % (self.url, self.chksum))
+        return False
 
     def replace_variables(self, string):
         var_regex = re.compile('\$\{.*\}')
