@@ -56,7 +56,9 @@ class ModuleManager(object):
 
     def install_module(self, url, version):
         repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
-        logger.debug("Fetching into %s" % repo_dir)
+        if repo_dir.endswith('git'):
+            repo_dir = repo_dir[:-4]
+        logger.info("Cloning module into %s" % repo_dir)
         clone_repo(url, repo_dir, version)
         self.discover_modules(repo_dir)
 
@@ -273,18 +275,17 @@ class CctResource(object):
         self.name = name
         self.chksum = chksum
         self.url = self.replace_variables(url) if '$' in url else url
-        self.filename = os.path.basename(url)
+        self.filename = name
         self.path = None
 
     def fetch(self, directory):
-        logger.debug("fetch to dir %s" % inspect.getmodule(self.__class__).__name__)
-        logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
-
         self.path = os.path.join(directory, self.filename)
 
         if self.check_sum():
-            logger.debug("Using cached artifact for %s" % self.name)
+            logger.info("Using cached artifact for %s" % self.name)
             return
+
+        logger.info("Fetching %s as an artifact for module %s" % (self.url, self.name))
 
         try:
             urlrequest.urlretrieve(self.url, self.path)
@@ -292,7 +293,7 @@ class CctResource(object):
             raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
 
         if not self.check_sum():
-            raise CCTError("Resource from %s doesn't match required chksum %s" % (self.url, self.chksum))
+            raise CCTError("Artifact from %s doesn't match required chksum %s" % (self.url, self.chksum))
 
     def check_sum(self):
         if not os.path.exists(self.path):
@@ -374,6 +375,8 @@ class ShellModule(Module):
             env = dict(os.environ)
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
             for name, res in self.cct_resource.items():
+                var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
+                logger.info('Created %s environment variable pointing to %s.' % (var_name, res.path))
                 env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
             out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
             self.logger.debug("Step ended with output: %s" % out)

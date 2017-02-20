@@ -57,7 +57,7 @@ class TestModules(unittest.TestCase):
 
     def test_artifacts_fetching_wrong_url(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip33"
-        chksum = "md5:d3c3fbf21935119d808bfe29fa33509c"
+        chksum = "md5:must_be_wrong_too"
         with self.assertRaises(CCTError):
             self.get_artifact(url, chksum)
 
