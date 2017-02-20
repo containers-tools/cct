@@ -48,7 +48,7 @@ class TestModules(unittest.TestCase):
         }
         module = Module("foo", "/tmp")
         module._get_artifacts(artifacts['artifacts'], "/tmp")
-        os.remove(module.cct_resource['cct'].path)
+        os.remove(module.artifacts['cct'].path)
 
     def test_artifacts_fetching(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip"

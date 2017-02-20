@@ -155,6 +155,7 @@ class ModuleRunner(object):
 
 
 class Module(object):
+    artifacts = {}
 
     def __init__(self, name, directory):
         self.name = name
@@ -164,7 +165,6 @@ class Module(object):
         self.instance = None
         self.state = "NotRun"
         self.logger = logger
-        self.cct_resource = {}
         if not directory:
             return
         try:
@@ -206,19 +206,19 @@ class Module(object):
                 var_name = token[1:]
                 # set value from environment
                 if os.environ.get(var_name):
-                    logger.info("Using host variable %s" % token)
+                    logger.debug("Using host variable %s" % token)
                     token = os.environ[var_name]
                 elif self.environment.get(var_name):
-                    logger.info("Using yaml file variable %s" % token)
+                    logger.debug("Using yaml file variable %s" % token)
                     token = self.environment[var_name]
             result += token + " "
         return result
 
     def _get_artifacts(self, artifacts, destination):
         for artifact in artifacts:
-            cct_resource = CctResource(**artifact)
-            cct_resource.fetch(destination)
-            self.cct_resource[cct_resource.name] = cct_resource
+            cct_artifact = CctArtifact(**artifact)
+            cct_artifact.fetch(destination)
+            self.artifacts[cct_artifact.name] = cct_artifact
 
     def setup(self):
         pass
@@ -265,9 +265,9 @@ class Module(object):
             raise e
 
 
-class CctResource(object):
+class CctArtifact(object):
     """
-    Object representing resource file for changes
+    Object representing artifact file for changes
     name - name of the file
     md5sum - md5sum
     """
@@ -310,7 +310,7 @@ class CctResource(object):
         var_regex = re.compile('\$\{.*\}')
         variable = var_regex.search(string).group(0)[2:-1]
         if os.environ.get(variable):
-            logger.info("Using host variable %s" % variable)
+            logger.debug("Using host variable %s" % variable)
             string = var_regex.sub(os.environ[variable], string)
         return string
 
@@ -374,10 +374,10 @@ class ShellModule(Module):
         try:
             env = dict(os.environ)
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
-            for name, res in self.cct_resource.items():
+            for name, artifact in self.artifacts.items():
                 var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
-                logger.info('Created %s environment variable pointing to %s.' % (var_name, res.path))
-                env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
+                logger.info('Created %s environment variable pointing to %s.' % (var_name, artifact.path))
+                env['CCT_ARTIFACT_PATH_' + name.upper()] = artifact.path
             out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
             self.logger.debug("Step ended with output: %s" % out)
         except subprocess.CalledProcessError as e:
