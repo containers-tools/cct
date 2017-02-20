@@ -48,8 +48,8 @@ class ModuleManager(object):
             try:
                 with open(os.path.join(mod_dir, "module.yaml")) as stream:
                     config = yaml.load(stream)
-                    if 'deps' in config:
-                        self.process_module_deps(config['deps'])
+                    if 'dependencies' in config:
+                        self.process_module_deps(config['dependencies'])
                     self.find_modules(mod_dir, config['language'])
             except Exception as ex:
                 logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
