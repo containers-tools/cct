@@ -148,7 +148,6 @@ class ModuleRunner(object):
             except Exception as e:
                 self.state = "Error"
                 logger.error("module %s cannot execute %s with args %s" % (self.module.name, operation.command, operation.args))
-                logger.debug(e, exc_info=True)
                 raise e
         self.module.instance.teardown()
         self.state = "Passed"
@@ -259,7 +258,7 @@ class Module(object):
             logger.debug("operation '%s' Passed" % operation.command)
             operation.state = "Passed"
         except Exception as e:
-            logger.error("%s is not supported by module %s", operation.command, e, exc_info=True)
+            logger.error("%s operation failed with: %s", operation.command, e, exc_info=True)
             operation.state = "Error"
             self.state = "Error"
             raise e
