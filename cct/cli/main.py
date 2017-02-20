@@ -110,10 +110,7 @@ class CCT_CLI(object):
             except KeyboardInterrupt:
                 pass
             except Exception as ex:
-                if args.verbose:
-                    raise
-                else:
-                    logger.error("Exception caught: %s", repr(ex))
+                logger.error("CCT failed, check logs above for errors")
         if args.command:
             self.exec_command(args.command)
 
