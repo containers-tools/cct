@@ -275,18 +275,17 @@ class CctResource(object):
         self.name = name
         self.chksum = chksum
         self.url = self.replace_variables(url) if '$' in url else url
-        self.filename = os.path.basename(url)
+        self.filename = name
         self.path = None
 
     def fetch(self, directory):
-        logger.debug("fetch to dir %s" % inspect.getmodule(self.__class__).__name__)
-        logger.debug("Fetching %s as a resource for module %s" % (self.url, self.name))
-
         self.path = os.path.join(directory, self.filename)
 
         if self.check_sum():
-            logger.debug("Using cached artifact for %s" % self.name)
+            logger.info("Using cached artifact for %s" % self.name)
             return
+
+        logger.info("Fetching %s as a resource for module %s" % (self.url, self.name))
 
         try:
             urlrequest.urlretrieve(self.url, self.path)
@@ -376,6 +375,8 @@ class ShellModule(Module):
             env = dict(os.environ)
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
             for name, res in self.cct_resource.items():
+                var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
+                logger.info('Created %s artifact' % var_name)
                 env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
             out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
             self.logger.debug("Step ended with output: %s" % out)
