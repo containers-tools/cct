@@ -285,7 +285,7 @@ class CctResource(object):
             logger.info("Using cached artifact for %s" % self.name)
             return
 
-        logger.info("Fetching %s as a resource for module %s" % (self.url, self.name))
+        logger.info("Fetching %s as an artifact for module %s" % (self.url, self.name))
 
         try:
             urlrequest.urlretrieve(self.url, self.path)
@@ -293,7 +293,7 @@ class CctResource(object):
             raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
 
         if not self.check_sum():
-            raise CCTError("Resource from %s doesn't match required chksum %s" % (self.url, self.chksum))
+            raise CCTError("Artifact from %s doesn't match required chksum %s" % (self.url, self.chksum))
 
     def check_sum(self):
         if not os.path.exists(self.path):
@@ -376,7 +376,7 @@ class ShellModule(Module):
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
             for name, res in self.cct_resource.items():
                 var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
-                logger.info('Created %s artifact' % var_name)
+                logger.info('Created %s environment variable pointing to %s.' % (var_name, res.path))
                 env['CCT_ARTIFACT_PATH_' + name.upper()] = res.path
             out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
             self.logger.debug("Step ended with output: %s" % out)
