@@ -331,10 +331,12 @@ class Operation(object):
 
 
 class ShellModule(Module):
+    modules_dirs = {}
 
     def __init__(self, name, directory, path):
         Module.__init__(self, name, directory)
         self.script = path
+        self.modules_dirs[os.path.splitext(name)[0]] = os.path.dirname(path)
         self._discover()
 
     def __getattr__(self, name):
@@ -373,6 +375,12 @@ class ShellModule(Module):
         try:
             env = dict(os.environ)
             env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
+
+            for name, mod_dir in self.modules_dirs.items():
+                var_name = 'CCT_MODULE_PATH_%s' % name.upper()
+                env[var_name] = mod_dir
+                logger.info('Created %s environment variable for module %s.' % (var_name, mod_dir))
+
             for name, artifact in self.artifacts.items():
                 var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
                 logger.info('Created %s environment variable pointing to %s.' % (var_name, artifact.path))
