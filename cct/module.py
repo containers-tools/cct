@@ -32,10 +32,12 @@ logger = logging.getLogger('cct')
 
 class ModuleManager(object):
     modules = {}
+    artifacts_dir = ""
 
     def __init__(self, directory):
         self.directory = directory
-        self.modules['base.Dummy'] = Dummy('base.Dummy', None)
+        self.artifacts_dir = os.path.abspath(os.path.join(directory, '..', 'artifacts'))
+        self.modules['base.Dummy'] = Dummy('base.Dummy', None, None)
 
     def discover_modules(self, directory=None):
         directory = directory if directory is not None else self.directory
@@ -96,13 +98,14 @@ class ModuleManager(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate))
+                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate), os.path.join(self.artifacts_dir, name))
 
     def check_module_sh(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
         logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
         name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
-        self.modules[name] = ShellModule(name, os.path.dirname(candidate), candidate)
+        self.modules[name] = ShellModule(name, os.path.dirname(candidate),
+                                         os.path.join(self.artifacts_dir, name), candidate)
 
     def list(self):
         print("available cct modules:")
@@ -156,7 +159,7 @@ class ModuleRunner(object):
 class Module(object):
     artifacts = {}
 
-    def __init__(self, name, directory):
+    def __init__(self, name, directory, artifacts_dir):
         self.name = name
         self.environment = {}
         self.deps = []
@@ -170,7 +173,7 @@ class Module(object):
             with open(os.path.join(directory, "module.yaml")) as stream:
                 config = yaml.load(stream)
                 if 'artifacts' in config:
-                    self._get_artifacts(config['artifacts'], directory)
+                    self._get_artifacts(config['artifacts'], artifacts_dir)
         except Exception as ex:
             logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
 
@@ -278,6 +281,9 @@ class CctArtifact(object):
         self.path = None
 
     def fetch(self, directory):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         self.path = os.path.join(directory, self.filename)
 
         if self.check_sum():
@@ -333,8 +339,8 @@ class Operation(object):
 class ShellModule(Module):
     modules_dirs = {}
 
-    def __init__(self, name, directory, path):
-        Module.__init__(self, name, directory)
+    def __init__(self, name, directory, artifacts_dir, path):
+        Module.__init__(self, name, directory, artifacts_dir)
         self.script = path
         self.modules_dirs[os.path.splitext(name)[0]] = os.path.dirname(path)
         self._discover()

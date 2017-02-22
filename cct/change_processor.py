@@ -61,7 +61,7 @@ class ChangeProcessor(object):
             for module_name, operations in modules.items():
                 if module_name not in mr.modules:
                         raise Exception("Module %s cannot be found" % module_name)
-                module = Module(module_name, None)
+                module = Module(module_name, None, None)
                 module.instance = mr.modules[module_name]
                 module._update_env(change_env)
                 module._process_operations(operations)
