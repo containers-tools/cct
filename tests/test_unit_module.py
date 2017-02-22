@@ -40,13 +40,13 @@ class TestModules(unittest.TestCase):
         artifacts = {
             "artifacts": [
                 {
-                    "url": url,
+                    "artifact": url,
                     "chksum": chksum,
                     "name": "cct",
                 }
             ]
         }
-        module = Module("foo", "/tmp", "/tmp")
+        module = Module("foo", None, "/tmp")
         module._get_artifacts(artifacts['artifacts'], "/tmp")
         os.remove(module.artifacts['cct'].path)
 
