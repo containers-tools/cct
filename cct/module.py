@@ -302,7 +302,7 @@ class CctArtifact(object):
             logger.info("Using cached artifact for %s" % self.name)
             return
 
-        logger.info("Fetching %s as an artifact for module %s" % (url, self.name))
+        logger.info("Fetching %s from  %s." % (self.filename, url))
 
         try:
             urlrequest.urlretrieve(url, self.path)
