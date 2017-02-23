@@ -274,6 +274,8 @@ class CctArtifact(object):
     def __init__(self, name, chksum, artifact="", hint=None):
         self.name = name
         self.chksum = chksum
+        self.alg = chksum.split(':')[0]
+        self.hash = chksum.split(':')[1]
         self.artifact = self.replace_variables(artifact) if '$' in artifact else artifact
         self.filename = name
         self.path = None
@@ -285,25 +287,36 @@ class CctArtifact(object):
 
         self.path = os.path.join(directory, self.filename)
 
+        url = self.artifact
+        if 'CCT_ARTIFACT_CACHE' in os.environ:
+            cache = os.environ['CCT_ARTIFACT_CACHE']
+            logger.info('Using CCT_ARTIFACT_CACHE=%s to fetch artifact' % cache)
+            for var in [v for v in dir(self) if not callable(getattr(self, v))]:
+                if var.startswith('_'):
+                    continue
+                token = '#%s#' % var
+                cache = cache.replace(token, getattr(self, var))
+            url = cache
+
         if self.check_sum():
             logger.info("Using cached artifact for %s" % self.name)
             return
 
-        logger.info("Fetching %s as an artifact for module %s" % (self.artifact, self.name))
+        logger.info("Fetching %s as an artifact for module %s" % (url, self.name))
 
         try:
-            urlrequest.urlretrieve(self.artifact, self.path)
+            urlrequest.urlretrieve(url, self.path)
         except Exception as ex:
             if self.hint:
                 raise CCTError('Artifact "%s" was not found. %s' % (self.path, self.hint))
             else:
-                raise CCTError("Cannot download artifact from url %s, error: %s" % (self.artifact, ex))
+                raise CCTError("Cannot download artifact from url %s, error: %s" % (url, ex))
 
         if not self.check_sum():
             if self.hint:
                 raise CCTError('Hash is not correct for artifact "%s". %s' % (self.path, self.hint))
             else:
-                raise CCTError("Artifact from %s doesn't match required chksum %s" % (self.artifact, self.chksum))
+                raise CCTError("Artifact from %s doesn't match required chksum %s" % (url, self.chksum))
 
     def check_sum(self):
         if not os.path.exists(self.path):
