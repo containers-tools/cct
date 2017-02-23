@@ -175,7 +175,6 @@ class Module(object):
             if 'artifacts' in config:
                 self._get_artifacts(config['artifacts'], artifacts_dir)
 
-
     def getenv(self, name, default=None):
         if os.environ.get(name):
             return os.environ.get(name)
@@ -296,13 +295,13 @@ class CctArtifact(object):
             urlrequest.urlretrieve(self.artifact, self.path)
         except Exception as ex:
             if self.hint:
-                raise CCTError('Artifact not found. %s' % self.hint)
+                raise CCTError('Artifact "%s" was not found. %s' % (self.path, self.hint))
             else:
                 raise CCTError("Cannot download artifact from url %s, error: %s" % (self.artifact, ex))
 
         if not self.check_sum():
             if self.hint:
-                raise CCTError('Hash is not correct for artifact. %s' % self.hint)
+                raise CCTError('Hash is not correct for artifact "%s". %s' % (self.path, self.hint))
             else:
                 raise CCTError("Artifact from %s doesn't match required chksum %s" % (self.artifact, self.chksum))
 
