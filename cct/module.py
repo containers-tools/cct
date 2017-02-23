@@ -54,7 +54,7 @@ class ModuleManager(object):
                         self.process_module_deps(config['dependencies'])
                     self.find_modules(mod_dir, config['language'])
             except Exception as ex:
-                logger.error("Cannot process module.yaml %s" % ex)
+                logger.error("Cannot setup module: %s" % ex)
                 raise ex
 
     def install_module(self, url, version):
