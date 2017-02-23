@@ -271,7 +271,7 @@ class CctArtifact(object):
     name - name of the file
     md5sum - md5sum
     """
-    def __init__(self, name, chksum, artifact="", hint=None):
+    def __init__(self, name, chksum, artifact="", hint=""):
         self.name = name
         self.chksum = chksum
         self.alg = chksum.split(':')[0]
