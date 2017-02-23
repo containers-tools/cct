@@ -299,7 +299,7 @@ class CctArtifact(object):
             url = cache
 
         if self.check_sum():
-            logger.info("Using cached artifact for %s" % self.name)
+            logger.info("Using cached artifact for %s" % self.filename)
             return
 
         logger.info("Fetching %s from  %s." % (self.filename, url))
