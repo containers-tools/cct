@@ -277,7 +277,7 @@ class CctArtifact(object):
         self.alg = chksum.split(':')[0]
         self.hash = chksum.split(':')[1]
         self.artifact = self.replace_variables(artifact) if '$' in artifact else artifact
-        self.filename = name
+        self.filename = os.path.basename(artifact)
         self.path = None
         self.hint = hint
 
@@ -308,15 +308,15 @@ class CctArtifact(object):
             urlrequest.urlretrieve(url, self.path)
         except Exception as ex:
             if self.hint:
-                raise CCTError('Artifact "%s" was not found. %s' % (self.path, self.hint))
+                raise CCTError('artifact: "%s" was not found. %s' % (self.path, self.hint))
             else:
-                raise CCTError("Cannot download artifact from url %s, error: %s" % (url, ex))
+                raise CCTError("cannot download artifact from url %s, error: %s" % (url, ex))
 
         if not self.check_sum():
             if self.hint:
-                raise CCTError('Hash is not correct for artifact "%s". %s' % (self.path, self.hint))
+                raise CCTError('hash is not correct for artifact: "%s". %s' % (self.path, self.hint))
             else:
-                raise CCTError("Artifact from %s doesn't match required chksum %s" % (url, self.chksum))
+                raise CCTError("artifact from %s doesn't match required chksum %s" % (url, self.chksum))
 
     def check_sum(self):
         if not os.path.exists(self.path):
