@@ -305,6 +305,8 @@ class CctArtifact(object):
         logger.info("Fetching %s from  %s." % (self.filename, url))
 
         try:
+            if os.path.basename(url) == url:
+                raise CCTError("Artifact is referenced by filename - can't download it.")
             urlrequest.urlretrieve(url, self.path)
         except Exception as ex:
             if self.hint:
