@@ -16,9 +16,10 @@ logger = logging.getLogger('cct')
 class ChangeProcessor(object):
     config = None
 
-    def __init__(self, config, modules_dir):
+    def __init__(self, config, modules_dir, artifacts_dir):
         self.config = config
         self.modules_dir = modules_dir
+        self.artifacts_dir = artifacts_dir
 
     def process(self, fetch_only=False):
         logger.debug("processing change %s" % self.config)
@@ -48,7 +49,7 @@ class ChangeProcessor(object):
         change_env = self._create_env_dict(change_cfg.get('environment'))
         if 'description' not in change_cfg:
             change_cfg['description'] = None
-        mr = ModuleManager(self.modules_dir)
+        mr = ModuleManager(self.modules_dir, self.artifacts_dir)
 
         if 'modules' in change_cfg:
             for module in change_cfg['modules']:
@@ -69,7 +70,7 @@ class ChangeProcessor(object):
         change = Change(change_cfg['name'], steps, change_cfg['description'],
                         change_env)
         if not fetch_only:
-            runner = ChangeRunner(change, self.modules_dir)
+            runner = ChangeRunner(change, self.modules_dir, self.artifacts_dir)
             try:
                 runner.run()
             except:
@@ -88,10 +89,9 @@ class Change(object):
 
 class ChangeRunner(object):
 
-    def __init__(self, change, modules_dir):
+    def __init__(self, change, modules_dir, artifacts_dir):
         self.change = change
-        self.modules_dir = modules_dir
-        self.modules = ModuleManager(self.modules_dir)
+        self.modules = ModuleManager(modules_dir, artifacts_dir)
         self.results = []
         self.cct_resource = {}
 
