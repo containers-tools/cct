@@ -34,6 +34,7 @@ class CCT_CLI(object):
     def setup_arguments(self):
         self.parser.add_argument('--fetch-only', action="store_true", help="cct will fetch modules and artifacts only")
         self.parser.add_argument('--modules-dir', nargs='?', default="%s/%s" % (os.getcwd(), 'modules'), help='directory from where modules are executed')
+        self.parser.add_argument('--artifacts-dir', nargs='?', default="%s/%s" % (os.getcwd(), 'artifacts'), help='directory where artifacts are stored')
         self.parser.add_argument('-v', '--verbose', action="store_true", help='verbose output')
         self.parser.add_argument('-q', '--quiet', action="store_true", help='set quiet output')
         self.parser.add_argument('changes', help='YAML files to process', nargs="*")
@@ -58,7 +59,7 @@ class CCT_CLI(object):
         stream = open(file, 'r')
         return yaml.load(stream)
 
-    def process_changes(self, changes, modules_dir, fetch_only):
+    def process_changes(self, changes, modules_dir, artifacts_dir, fetch_only):
         for change in changes:
             if change is '':
                 continue
@@ -67,7 +68,7 @@ class CCT_CLI(object):
                 change = self.process_url(change)
             else:
                 change = self.process_file(change)
-            cp = ChangeProcessor(change, modules_dir)
+            cp = ChangeProcessor(change, modules_dir, artifacts_dir)
             cp.process(fetch_only)
 
     def run(self):
@@ -90,7 +91,7 @@ class CCT_CLI(object):
             setup_logging(level=logging.ERROR)
         else:
             setup_logging(level=logging.INFO)
-        modules = ModuleManager(args.modules_dir)
+        modules = ModuleManager(args.modules_dir, args.artifacts_dir)
         if args.list:
             modules.discover_modules()
             modules.list()
@@ -106,7 +107,7 @@ class CCT_CLI(object):
             else:
                 changes += args.changes
             try:
-                self.process_changes(changes, args.modules_dir, args.fetch_only)
+                self.process_changes(changes, args.modules_dir, args.artifacts_dir, args.fetch_only)
             except KeyboardInterrupt:
                 pass
             except Exception:

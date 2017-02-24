@@ -13,7 +13,7 @@ class TestModules(unittest.TestCase):
 
     def test_find_modules(self):
         path = os.path.abspath(os.path.dirname(cct.module.__file__)) + "/modules"
-        module_manager = ModuleManager(path)
+        module_manager = ModuleManager(path, '/tmp')
         module_manager.discover_modules()
 
     def test_module_getenv_none(self):
@@ -79,6 +79,6 @@ class TestModules(unittest.TestCase):
             ]
         }
         mod_dir = tempfile.mkdtemp()
-        module_manager = ModuleManager(mod_dir)
+        module_manager = ModuleManager(mod_dir, '/tmp')
         module_manager.process_module_deps(deps['dependencies'])
         shutil.rmtree((mod_dir))

@@ -34,9 +34,9 @@ class ModuleManager(object):
     modules = {}
     artifacts_dir = ""
 
-    def __init__(self, directory):
-        self.directory = directory
-        self.artifacts_dir = os.path.abspath(os.path.join(directory, '..', 'artifacts'))
+    def __init__(self, modules_dir, artifacts_dir):
+        self.directory = modules_dir
+        self.artifacts_dir = artifacts_dir
         self.modules['base.Dummy'] = Dummy('base.Dummy', None, None)
 
     def discover_modules(self, directory=None):
