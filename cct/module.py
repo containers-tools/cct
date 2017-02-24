@@ -32,10 +32,12 @@ logger = logging.getLogger('cct')
 
 class ModuleManager(object):
     modules = {}
+    artifacts_dir = ""
 
     def __init__(self, directory):
         self.directory = directory
-        self.modules['base.Dummy'] = Dummy('base.Dummy', None)
+        self.artifacts_dir = os.path.abspath(os.path.join(directory, '..', 'artifacts'))
+        self.modules['base.Dummy'] = Dummy('base.Dummy', None, None)
 
     def discover_modules(self, directory=None):
         directory = directory if directory is not None else self.directory
@@ -52,7 +54,8 @@ class ModuleManager(object):
                         self.process_module_deps(config['dependencies'])
                     self.find_modules(mod_dir, config['language'])
             except Exception as ex:
-                logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
+                logger.error("Cannot setup module: %s" % ex)
+                raise ex
 
     def install_module(self, url, version):
         repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
@@ -96,13 +99,14 @@ class ModuleManager(object):
                 # Instantiate class
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate))
+                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate), os.path.join(self.artifacts_dir, name.split('.')[0]))
 
     def check_module_sh(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
         logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
         name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
-        self.modules[name] = ShellModule(name, os.path.dirname(candidate), candidate)
+        self.modules[name] = ShellModule(name, os.path.dirname(candidate),
+                                         os.path.join(self.artifacts_dir, name.split('.')[0]), candidate)
 
     def list(self):
         print("available cct modules:")
@@ -123,7 +127,7 @@ class ModuleManager(object):
 
         for method in dir(module):
             if callable(getattr(module, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'url', 'version', 'teardown']:
+                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'teardown']:
                     print("  %s: %s" % (method, getattr(module, method).__doc__))
 
         if getattr(module, "teardown").__doc__:
@@ -138,7 +142,7 @@ class ModuleRunner(object):
     def run(self):
         self.module.instance.setup()
         for operation in self.module.operations:
-            if operation.command in ['setup', 'run', 'url', 'version', 'teardown']:
+            if operation.command in ['setup', 'run', 'teardown']:
                 continue
             self.module.instance._process_environment(operation)
             try:
@@ -156,7 +160,7 @@ class ModuleRunner(object):
 class Module(object):
     artifacts = {}
 
-    def __init__(self, name, directory):
+    def __init__(self, name, directory, artifacts_dir):
         self.name = name
         self.environment = {}
         self.deps = []
@@ -166,13 +170,10 @@ class Module(object):
         self.logger = logger
         if not directory:
             return
-        try:
-            with open(os.path.join(directory, "module.yaml")) as stream:
-                config = yaml.load(stream)
-                if 'artifacts' in config:
-                    self._get_artifacts(config['artifacts'], directory)
-        except Exception as ex:
-            logger.debug("Cannot process module.yaml %s" % ex, exc_info=True)
+        with open(os.path.join(directory, "module.yaml")) as stream:
+            config = yaml.load(stream)
+            if 'artifacts' in config:
+                self._get_artifacts(config['artifacts'], artifacts_dir)
 
     def getenv(self, name, default=None):
         if os.environ.get(name):
@@ -270,29 +271,54 @@ class CctArtifact(object):
     name - name of the file
     md5sum - md5sum
     """
-    def __init__(self, name, chksum, url):
+    def __init__(self, name, chksum, artifact="", hint=""):
         self.name = name
         self.chksum = chksum
-        self.url = self.replace_variables(url) if '$' in url else url
-        self.filename = name
+        self.alg = chksum.split(':')[0]
+        self.hash = chksum.split(':')[1]
+        self.artifact = self.replace_variables(artifact) if '$' in artifact else artifact
+        self.filename = os.path.basename(artifact)
         self.path = None
+        self.hint = hint
 
     def fetch(self, directory):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         self.path = os.path.join(directory, self.filename)
 
+        url = self.artifact
+        if 'CCT_ARTIFACT_CACHE' in os.environ:
+            cache = os.environ['CCT_ARTIFACT_CACHE']
+            logger.info('Using CCT_ARTIFACT_CACHE=%s to fetch artifact' % cache)
+            for var in [v for v in dir(self) if not callable(getattr(self, v))]:
+                if var.startswith('_'):
+                    continue
+                token = '#%s#' % var
+                cache = cache.replace(token, getattr(self, var))
+            url = cache
+
         if self.check_sum():
-            logger.info("Using cached artifact for %s" % self.name)
+            logger.info("Using cached artifact for %s" % self.filename)
             return
 
-        logger.info("Fetching %s as an artifact for module %s" % (self.url, self.name))
+        logger.info("Fetching %s from  %s." % (self.filename, url))
 
         try:
-            urlrequest.urlretrieve(self.url, self.path)
+            if os.path.basename(url) == url:
+                raise CCTError("Artifact is referenced by filename - can't download it.")
+            urlrequest.urlretrieve(url, self.path)
         except Exception as ex:
-            raise CCTError("Cannot download artifact from url %s, error: %s" % (self.url, ex))
+            if self.hint:
+                raise CCTError('artifact: "%s" was not found. %s' % (self.path, self.hint))
+            else:
+                raise CCTError("cannot download artifact from url %s, error: %s" % (url, ex))
 
         if not self.check_sum():
-            raise CCTError("Artifact from %s doesn't match required chksum %s" % (self.url, self.chksum))
+            if self.hint:
+                raise CCTError('hash is not correct for artifact: "%s". %s' % (self.path, self.hint))
+            else:
+                raise CCTError("artifact from %s doesn't match required chksum %s" % (url, self.chksum))
 
     def check_sum(self):
         if not os.path.exists(self.path):
@@ -333,8 +359,8 @@ class Operation(object):
 class ShellModule(Module):
     modules_dirs = {}
 
-    def __init__(self, name, directory, path):
-        Module.__init__(self, name, directory)
+    def __init__(self, name, directory, artifacts_dir, path):
+        Module.__init__(self, name, directory, artifacts_dir)
         self.script = path
         self.modules_dirs[os.path.splitext(name)[0]] = os.path.dirname(path)
         self._discover()

@@ -109,8 +109,9 @@ class CCT_CLI(object):
                 self.process_changes(changes, args.modules_dir, args.fetch_only)
             except KeyboardInterrupt:
                 pass
-            except Exception as ex:
+            except Exception:
                 logger.error("CCT failed, check logs above for errors")
+                exit(1)
         if args.command:
             self.exec_command(args.command)
 
