@@ -21,9 +21,10 @@ class TestModule(unittest.TestCase):
         """
         config = [{
             'changes': [{'base.Dummy': [{'dump': '493'}]}],
-            'name': 'dummy'
+            'name': 'dummy',
+            'modules': [{'url': 'tests/modules/'}]
         }]
-        changeProcessor = ChangeProcessor(config, 'foo', '/tmp')
+        changeProcessor = ChangeProcessor(config, 'tests/modules', '/tmp')
         changeProcessor.process()
 
     def test_process_int_values(self):
@@ -34,9 +35,10 @@ class TestModule(unittest.TestCase):
             'changes': [{'base.Dummy': [{'dump': 493}, {'dump': 'foo'}]},
                         {'base.Dummy': [{'dump': 567}]},
                         {'base.Dummy': [{'dump': 123}]}],
-            'name': 'dummy'
+            'name': 'dummy',
+            'modules': [{'url': 'tests/modules/'}]
         }]
-        changeProcessor = ChangeProcessor(config, '/foo', '/tmp')
+        changeProcessor = ChangeProcessor(config, 'tests/modules', '/tmp')
         changeProcessor.process()
 
     def test_fetch_modules(self):
