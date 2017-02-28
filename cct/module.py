@@ -136,8 +136,9 @@ class ModuleManager(object):
         # check if the version are not conflicting
         # FIXME - tag in branch vs branch is considered incompatible
         if self.modules[name].version != self.version:
-            logger.error("Conflicting module '%s' version found, installed version '%s', required version '%s'" % (name, self.modules[name].version, self.version))
-            raise Exception('Conflicting modules')
+            msg = "Conflicting module '%s' version found, installed version '%s', required version '%s'" % (name, self.modules[name].version, self.version)
+            logger.error(msg)
+            raise Exception(msg)
         return True
 
     def list(self):

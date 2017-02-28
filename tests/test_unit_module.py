@@ -101,6 +101,6 @@ class TestModules(unittest.TestCase):
         mod_dir = tempfile.mkdtemp()
         mm = ModuleManager(mod_dir, '/tmp')
         mm.install_module(url, 'master')
-        with self.assertRaisesRegexp(Exception, 'Conflicting modules'):
+        with self.assertRaisesRegexp(Exception, 'Conflicting module.*'):
             mm.install_module(url, '1.0')
         shutil.rmtree(mod_dir)
