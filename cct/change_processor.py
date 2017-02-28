@@ -55,7 +55,8 @@ class ChangeProcessor(object):
             for module in change_cfg['modules']:
                 url = module['url']
                 ver = module['version'] if 'version' in module else None
-                mr.install_module(url, ver)
+                override = module['override'] if 'override' in module else False
+                mr.install_module(url, ver, override)
 
         steps = []
         for modules in change_cfg['changes']:
