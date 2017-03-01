@@ -39,7 +39,6 @@ class ModuleManager(object):
         self.artifacts_dir = artifacts_dir
         self.version = None
         self.override = False
-        self.modules['base.Dummy'] = Dummy('base.Dummy', None, None)
 
     def discover_modules(self, directory=None):
         directory = directory if directory is not None else self.directory
@@ -144,14 +143,11 @@ class ModuleManager(object):
     def list(self):
         print("available cct modules:")
         for name, module in self.modules.iteritems():
-            if name == 'base.Dummy':
-                print("  %s:1.0" % name)
-            else:
-                mod_dir = os.path.basename(inspect.getabsfile(module.__class__))
-                if hasattr(module, 'script'):
-                    mod_dir = os.path.dirname(module.script)
-                version = get_tag_or_branch(mod_dir)[:-1]
-                print("  %s:%s" % (name, version))
+            mod_dir = os.path.basename(inspect.getabsfile(module.__class__))
+            if hasattr(module, 'script'):
+                mod_dir = os.path.dirname(module.script)
+            version = get_tag_or_branch(mod_dir)[:-1]
+            print("  %s:%s" % (name, version))
 
     def list_module_oper(self, name):
         module = None
@@ -457,14 +453,3 @@ class ShellModule(Module):
             self.logger.debug("Step ended with output: %s" % out)
         except subprocess.CalledProcessError as e:
             raise CCTError(e.output)
-
-
-class Dummy(Module):
-    def dump(self, *args):
-        """
-        Dumps arguments to a logfile.
-
-        Args:
-         *args: Will be dumped :).
-        """
-        logger.info("dummy module performed dump with args %s and environment: %s" % (args, self.environment))
