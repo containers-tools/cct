@@ -107,7 +107,7 @@ class ModuleManager(object):
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
                     name = module_name.split('.')[-1] + "." + cls.__name__
-                    self.modules[name] = cls(name, os.path.dirname(candidate), os.path.join(self.artifacts_dir, name.split('.')[0]))
+                    self.modules[name] = cls(name, os.path.dirname(candidate), self.artifacts_dir)
                     self.modules[name].version = self.version
                     self.modules[name].override = self.override
 
@@ -117,8 +117,7 @@ class ModuleManager(object):
         name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
         if self.check_module_version(name):
             return
-        self.modules[name] = ShellModule(name, os.path.dirname(candidate),
-                                         os.path.join(self.artifacts_dir, name.split('.')[0]), candidate)
+        self.modules[name] = ShellModule(name, os.path.dirname(candidate), self.artifacts_dir, candidate)
         self.modules[name].version = self.version
         self.modules[name].override = self.override
 
@@ -438,17 +437,19 @@ class ShellModule(Module):
         cmd = '/bin/bash -c " source %s ; %s %s"' % (self.script, name, " ".join(args))
         try:
             env = dict(os.environ)
-            env['CCT_MODULE_PATH'] = os.path.dirname(self.script)
+            mod_dir = os.path.dirname(self.script)
+            env['CCT_MODULE_PATH'] = mod_dir
+            logger.info('Created CCT_MODULE_PATH environment variable for module %s' % mod_dir)
 
             for name, mod_dir in self.modules_dirs.items():
-                var_name = 'CCT_MODULE_PATH_%s' % name.upper()
+                var_name = 'CCT_MODULE_PATH_%s' % name.upper().replace('-', '_')
                 env[var_name] = mod_dir
                 logger.info('Created %s environment variable for module %s.' % (var_name, mod_dir))
 
             for name, artifact in self.artifacts.items():
-                var_name = 'CCT_ARTIFACT_PATH_' + name.upper()
+                var_name = 'CCT_ARTIFACT_PATH_' + name.upper().replace('-', '_')
                 logger.info('Created %s environment variable pointing to %s.' % (var_name, artifact.path))
-                env['CCT_ARTIFACT_PATH_' + name.upper()] = artifact.path
+                env[var_name] = artifact.path
             out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
             self.logger.debug("Step ended with output: %s" % out)
         except subprocess.CalledProcessError as e:
