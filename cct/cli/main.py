@@ -59,6 +59,9 @@ class CCT_CLI(object):
         stream = open(file, 'r')
         return yaml.load(stream)
 
+    def fetch_artifacts(self, changes, modules_dir, artifacts_dir):
+        return self.process_changes(changes, modules_dir, artifacts_dir, True)
+
     def process_changes(self, changes, modules_dir, artifacts_dir, fetch_only):
         for change in changes:
             if change is '':
@@ -69,7 +72,7 @@ class CCT_CLI(object):
             else:
                 change = self.process_file(change)
             cp = ChangeProcessor(change, modules_dir, artifacts_dir)
-            cp.process(fetch_only)
+            return cp.process(fetch_only)
 
     def run(self):
         self.setup_arguments()

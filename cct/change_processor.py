@@ -24,7 +24,7 @@ class ChangeProcessor(object):
     def process(self, fetch_only=False):
         logger.debug("processing change %s" % self.config)
         for change in self.config:
-            self._process_change(change, fetch_only)
+            return self._process_change(change, fetch_only)
 
     def _merge_environment(self, change_env, module_env):
         if change_env is None:
@@ -58,6 +58,13 @@ class ChangeProcessor(object):
                 override = module['override'] if 'override' in module else False
                 mr.install_module(url, ver, override)
 
+        if fetch_only:
+            artifacts = {}
+            for _, module in mr.modules.items():
+                for _, artifact in module.artifacts.items():
+                    artifacts[artifact.filename] = artifact.hash
+            return artifacts
+
         steps = []
         for modules in change_cfg['changes']:
             for module_name, operations in modules.items():
@@ -70,14 +77,13 @@ class ChangeProcessor(object):
                 steps.append(module)
         change = Change(change_cfg['name'], steps, change_cfg['description'],
                         change_env)
-        if not fetch_only:
-            runner = ChangeRunner(change, self.modules_dir, self.artifacts_dir)
-            try:
-                runner.run()
-            except:
-                raise
-            finally:
-                runner.print_result_report()
+        runner = ChangeRunner(change, self.modules_dir, self.artifacts_dir)
+        try:
+            runner.run()
+        except:
+            raise
+        finally:
+            runner.print_result_report()
 
 
 class Change(object):
