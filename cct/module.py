@@ -20,7 +20,7 @@ import yaml
 from pkg_resources import resource_string, resource_filename
 
 from cct.errors import CCTError
-from cct.lib.git import clone_repo
+from cct.lib.git import clone_repo, get_tag_or_branch
 
 try:
     import urllib.request as urlrequest
@@ -37,6 +37,8 @@ class ModuleManager(object):
     def __init__(self, modules_dir, artifacts_dir):
         self.directory = modules_dir
         self.artifacts_dir = artifacts_dir
+        self.version = None
+        self.override = False
         self.modules['base.Dummy'] = Dummy('base.Dummy', None, None)
 
     def discover_modules(self, directory=None):
@@ -54,21 +56,26 @@ class ModuleManager(object):
                         self.process_module_deps(config['dependencies'])
                     self.find_modules(mod_dir, config['language'])
             except Exception as ex:
-                logger.error("Cannot setup module: %s" % ex)
+                logger.error("Cannot setup module: %s" % ex, exc_info=True)
                 raise ex
 
-    def install_module(self, url, version):
+    def install_module(self, url, version, override=False):
+        if override and not version:
+            raise CCTError('Cannot override vesrion without specifying it!')
+        self.version = version
+        self.override = override
         repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
         if repo_dir.endswith('git'):
             repo_dir = repo_dir[:-4]
         logger.info("Cloning module into %s" % repo_dir)
-        clone_repo(url, repo_dir, version)
+        clone_repo(url, repo_dir, self.version, self.override)
         self.discover_modules(repo_dir)
 
     def process_module_deps(self, deps):
         for dep in deps:
             logger.debug("Fetching module from %s" % dep['url'])
-            self.install_module(dep['url'], dep['version'] if 'version' in deps else None)
+            self.install_module(dep['url'], str(dep['version']) if 'version' in dep else None,
+                                self.override)
 
     def find_modules(self, directory, language):
         """
@@ -97,21 +104,54 @@ class ModuleManager(object):
             # Check that class is from our namespace
             if module_name == clazz.__module__:
                 # Instantiate class
+                self.check_module_version(name)
                 cls = getattr(module, name)
                 if issubclass(cls, Module):
-                    self.modules[module_name.split('.')[-1] + "." + cls.__name__] = cls(module_name.split('.')[-1] + "." + cls.__name__, os.path.dirname(candidate), os.path.join(self.artifacts_dir, name.split('.')[0]))
+                    name = module_name.split('.')[-1] + "." + cls.__name__
+                    self.modules[name] = cls(name, os.path.dirname(candidate), os.path.join(self.artifacts_dir, name.split('.')[0]))
+                    self.modules[name].version = self.version
+                    self.modules[name].override = self.override
 
     def check_module_sh(self, candidate):
         module_name = "cct.module." + os.path.dirname(candidate).split('/')[-1]
-        logger.debug("importing module %s to %s" % (os.path.abspath(candidate), module_name))
+        logger.debug("Importing module %s to %s" % (os.path.abspath(candidate), module_name))
         name = module_name.split('.')[-1] + "." + os.path.basename(candidate)[:-3]
+        if self.check_module_version(name):
+            return
         self.modules[name] = ShellModule(name, os.path.dirname(candidate),
                                          os.path.join(self.artifacts_dir, name.split('.')[0]), candidate)
+        self.modules[name].version = self.version
+        self.modules[name].override = self.override
+
+    def check_module_version(self, name):
+        # if we override version we dont care about overwriting modules
+        if self.override:
+            return False
+        # if the module doesnt exists just create it
+        if name not in self.modules:
+            return False
+        # if module was froced we will not override it
+        if self.modules[name].override:
+            return True
+        # check if the version are not conflicting
+        # FIXME - tag in branch vs branch is considered incompatible
+        if self.modules[name].version != self.version:
+            msg = "Conflicting module '%s' version found, installed version '%s', required version '%s'" % (name, self.modules[name].version, self.version)
+            logger.error(msg)
+            raise Exception(msg)
+        return True
 
     def list(self):
         print("available cct modules:")
-        for module, _ in self.modules.iteritems():
-            print("  %s" % module)
+        for name, module in self.modules.iteritems():
+            if name == 'base.Dummy':
+                print("  %s:1.0" % name)
+            else:
+                mod_dir = os.path.basename(inspect.getabsfile(module.__class__))
+                if hasattr(module, 'script'):
+                    mod_dir = os.path.dirname(module.script)
+                version = get_tag_or_branch(mod_dir)[:-1]
+                print("  %s:%s" % (name, version))
 
     def list_module_oper(self, name):
         module = None
@@ -160,7 +200,7 @@ class ModuleRunner(object):
 class Module(object):
     artifacts = {}
 
-    def __init__(self, name, directory, artifacts_dir):
+    def __init__(self, name, directory, artifacts_dir, version=None):
         self.name = name
         self.environment = {}
         self.deps = []
@@ -168,6 +208,8 @@ class Module(object):
         self.instance = None
         self.state = "NotRun"
         self.logger = logger
+        self.version = version
+        self.override = False
         if not directory:
             return
         with open(os.path.join(directory, "module.yaml")) as stream:

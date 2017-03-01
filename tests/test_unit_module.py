@@ -1,4 +1,5 @@
 import cct.module
+import logging
 import os
 import unittest
 import shutil
@@ -7,6 +8,8 @@ import tempfile
 from cct.errors import CCTError
 from cct.module import Module
 from cct.module import ModuleManager
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class TestModules(unittest.TestCase):
@@ -68,8 +71,8 @@ class TestModules(unittest.TestCase):
             self.get_artifact(url, chksum)
 
     def test_moudule_deps(self):
-        url = "https://github.com/containers-tools/base"
-        version = None
+        url = "https://github.com/containers-tools/test-module-dep"
+        version = "master"
         deps = {
             "dependencies": [
                 {
@@ -81,4 +84,23 @@ class TestModules(unittest.TestCase):
         mod_dir = tempfile.mkdtemp()
         module_manager = ModuleManager(mod_dir, '/tmp')
         module_manager.process_module_deps(deps['dependencies'])
-        shutil.rmtree((mod_dir))
+        shutil.rmtree(mod_dir)
+
+    def test_module_version_override(self):
+        url = "https://github.com/containers-tools/test-module-dep"
+        mod_dir = tempfile.mkdtemp()
+        mm = ModuleManager(mod_dir, '/tmp')
+        mm.install_module(url, '1.0', override=True)
+        mm.install_module(url, 'master')
+        self.assertEquals(mm.modules['test-module-dep.dummy'].version, '1.0')
+        self.assertTrue(mm.modules['test-module-dep.dummy'].override)
+        shutil.rmtree(mod_dir)
+
+    def test_module_version_conflict(self):
+        url = "https://github.com/containers-tools/test-module-dep"
+        mod_dir = tempfile.mkdtemp()
+        mm = ModuleManager(mod_dir, '/tmp')
+        mm.install_module(url, 'master')
+        with self.assertRaisesRegexp(Exception, 'Conflicting module.*'):
+            mm.install_module(url, '1.0')
+        shutil.rmtree(mod_dir)
