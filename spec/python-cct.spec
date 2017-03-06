@@ -5,8 +5,8 @@
 %endif
 
 Name:           python-cct
-Version:        0.1.1
-Release:        1%{?dist}
+Version:        0.2.0
+Release:        0.1%{?dist}
 Summary:        Container configuration tool
 Group:          Development/Tools
 License:        MIT
