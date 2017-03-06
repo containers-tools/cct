@@ -13,3 +13,9 @@ clean:
 
 prepare: clean
 	@mkdir target
+
+release: clean
+	python setup.py clean
+	python setup.py register
+	python setup.py sdist
+	python setup.py sdist upload
