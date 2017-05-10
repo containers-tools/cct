@@ -4,6 +4,7 @@ import os
 import unittest
 import shutil
 import tempfile
+import yaml
 
 from cct.errors import CCTError
 from cct.module import Module
@@ -104,3 +105,17 @@ class TestModules(unittest.TestCase):
         with self.assertRaisesRegexp(Exception, 'Conflicting module.*'):
             mm.install_module(url, '1.0')
         shutil.rmtree(mod_dir)
+
+    def test_module_script(self):
+        mod_dir = os.path.join(tempfile.mkdtemp(), 'scripts')
+        mm = ModuleManager(mod_dir, '/tmp')
+        script = os.path.join(mod_dir, 'test', 'script')
+        module = os.path.join(mod_dir, 'module.yaml')
+        modconfig =  { 'language' : [ 'script']}
+        os.makedirs(os.path.dirname(script))
+        with open(module, 'w') as modfile:
+            yaml.dump(modconfig, modfile, default_flow_style=False)
+        shutil.copy(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'script'), script)
+        mm.discover_modules(mod_dir)
+        mod =  mm.modules['scripts.test']
+        mod.script()

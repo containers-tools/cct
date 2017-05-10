@@ -10,11 +10,13 @@ import imp
 import inspect
 import glob
 import logging
+import multiprocessing
 import os
 import re
 import shlex
 import string
 import subprocess
+import traceback
 import yaml
 
 from pkg_resources import resource_string, resource_filename
@@ -83,12 +85,14 @@ class ModuleManager(object):
         if not os.path.exists(directory):
             return {}
 
-        logger.debug("discovering modules in %s" % directory)
-
+        logger.debug("Discovering modules in %s" % directory)
         if 'bash' in language:
             pattern = os.path.join(os.path.abspath(directory), '*.sh')
             for candidate in glob.glob(pattern):
                 self.check_module_sh(candidate)
+        elif 'script' in language:
+            for candidate in filter(lambda f: os.path.isdir(os.path.join(directory, f)), os.listdir(directory)):
+                self.check_module_script(os.path.join(directory, candidate))
         else:
             pattern = os.path.join(os.path.abspath(directory), '*.py')
             for candidate in glob.glob(pattern):
@@ -121,6 +125,14 @@ class ModuleManager(object):
         self.modules[name].version = self.version
         self.modules[name].override = self.override
 
+    def check_module_script(self, candidate):
+        module_name = "cct.module." + candidate.split('/')[-1]
+        logger.debug("Importing module %s to %s" % (os.path.abspath(candidate), module_name))
+        name = "%s.%s" % (os.path.dirname(candidate).split('/')[-1], module_name.split('.')[-1])
+        self.modules[name] = ScriptModule(name, os.path.dirname(candidate), self.artifacts_dir)
+        self.modules[name].version = self.version
+        self.modules[name].override = self.override
+
     def check_module_version(self, name):
         # if we override version we dont care about overwriting modules
         if self.override:
@@ -143,8 +155,10 @@ class ModuleManager(object):
         print("available cct modules:")
         for name, module in self.modules.iteritems():
             mod_dir = os.path.basename(inspect.getabsfile(module.__class__))
-            if hasattr(module, 'script'):
+            if isinstance(module, ShellModule):
                 mod_dir = os.path.dirname(module.script)
+            elif isinstance(module, ScriptModule):
+                mod_dir = module.directory
             version = get_tag_or_branch(mod_dir)[:-1]
             print("  %s:%s" % (name, version))
 
@@ -169,6 +183,28 @@ class ModuleManager(object):
             print("  teardown: %s " % getattr(module, "teardown").__doc__)
 
 
+class Process(multiprocessing.Process):
+    def __init__(self, *args, **kwargs):
+        multiprocessing.Process.__init__(self, *args, **kwargs)
+        self._pconn, self._cconn = multiprocessing.Pipe()
+        self._exception = None
+
+    def run(self):
+        try:
+            multiprocessing.Process.run(self)
+            self._cconn.send(None)
+        except Exception as e:
+            tb = traceback.format_exc()
+            self._cconn.send((e, tb))
+            # raise e  # You can still rise this exception if you need to
+
+    @property
+    def exception(self):
+        if self._pconn.poll():
+            self._exception = self._pconn.recv()
+        return self._exception
+
+
 class ModuleRunner(object):
     def __init__(self, module):
         self.module = module
@@ -182,7 +218,12 @@ class ModuleRunner(object):
             self.module.instance._process_environment(operation)
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
-                self.module.instance.run(operation)
+                proc = Process(target=self.module.instance._run, args=(operation, ))
+                proc.start()
+                proc.join()
+                if proc.exception:
+                    err, tb = proc.exception
+                    raise Exception(err)
                 self.state = "Passed"
             except Exception as e:
                 self.state = "Error"
@@ -205,6 +246,7 @@ class Module(object):
         self.logger = logger
         self.version = version
         self.override = False
+        self.uid = os.getuid()
         if not directory:
             return
         with open(os.path.join(directory, "module.yaml")) as stream:
@@ -276,9 +318,13 @@ class Module(object):
             if '$' in operation.args[i]:
                 operation.args[i] = self._replace_variables(operation.args[i])
 
-    def run(self, operation):
+    def user(self, uid):
+        self.uid = uid
+
+    def _run(self, operation):
         try:
-            logger.debug("invoking command %s", operation.command)
+            os.setuid(self.uid)
+            logger.debug("invoking command %s as uid: %s", operation.command, self.uid)
             method = getattr(self, operation.command)
             method_params = inspect.getargspec(method)
             args = []
@@ -391,6 +437,49 @@ class Operation(object):
         if args:
             for arg in args:
                 self.args.append(arg.rstrip())
+
+
+class ScriptModule(Module):
+    modules_dirs = {}
+
+    def __init__(self, name, directory, artifacts_dir):
+        Module.__init__(self, name, directory, artifacts_dir)
+        self.directory = directory
+        pattern = os.path.join(directory, name.split('.')[1], '*')
+        self.names = {}
+        for script in filter(lambda f: os.path.isfile(f), glob.glob(pattern)):
+            self.names[os.path.basename(script).replace('-', '_').replace('.', '_')] = script
+            self.modules_dirs[os.path.splitext(name)[0]] = os.path.dirname(script)
+
+    def __getattr__(self, name):
+        def wrapper(*args, **kwargs):
+            if name in self.names:
+                self._run_script(self.names[name], *args)
+            else:
+                raise AttributeError("No such method %s" % name)
+        return wrapper
+
+    def _run_script(self, script, *args):
+        cmd = '%s %s' % (script, " ".join(args))
+        try:
+            env = dict(os.environ)
+            mod_dir = os.path.dirname(script)
+            env['CCT_MODULE_PATH'] = mod_dir
+            logger.info('Created CCT_MODULE_PATH environment variable for module %s' % mod_dir)
+
+            for name, mod_dir in self.modules_dirs.items():
+                var_name = 'CCT_MODULE_PATH_%s' % name.upper().replace('-', '_')
+                env[var_name] = mod_dir
+                logger.info('Created %s environment variable for module %s.' % (var_name, mod_dir))
+
+            for name, artifact in self.artifacts.items():
+                var_name = 'CCT_ARTIFACT_PATH_' + name.upper().replace('-', '_')
+                logger.info('Created %s environment variable pointing to %s.' % (var_name, artifact.path))
+                env[var_name] = artifact.path
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env, shell=True)
+            self.logger.debug("Step ended with output: %s" % out)
+        except subprocess.CalledProcessError as e:
+            raise CCTError(e.output)
 
 
 class ShellModule(Module):
