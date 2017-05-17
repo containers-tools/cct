@@ -18,7 +18,7 @@ Each artifact defined in module.yaml is accessible via environment variable **CC
 
 *Example*: If you have following section in module.yaml:
 
-``` {.yaml}
+``` yaml
 artifacts:
   - name: jolokia
     chksum: md5:240381af7039461f3472b7796fe9cd4b
