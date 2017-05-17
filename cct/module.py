@@ -460,7 +460,7 @@ class ScriptModule(Module):
         return wrapper
 
     def _run_script(self, script, *args):
-        cmd = '%s %s' % (script, " ".join(args))
+        cmd = 'bash -x %s %s' % (script, " ".join(args))
         try:
             env = dict(os.environ)
             mod_dir = os.path.dirname(script)
