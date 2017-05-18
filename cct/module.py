@@ -215,10 +215,14 @@ class ModuleRunner(object):
         for operation in self.module.operations:
             if operation.command in ['setup', 'run', 'teardown']:
                 continue
+            if operation.command == 'user':
+                logger.info("setting uid to %s" % operation.args[0])
+                self.module.uid=operation.args[0]
+                continue
             self.module.instance._process_environment(operation)
             try:
                 logger.debug("executing module %s operation %s with args %s" % (self.module.name, operation.command, operation.args))
-                proc = Process(target=self.module.instance._run, args=(operation, ))
+                proc = Process(target=self.module.instance._run, args=(operation, self.module.uid))
                 proc.start()
                 proc.join()
                 if proc.exception:
@@ -318,13 +322,10 @@ class Module(object):
             if '$' in operation.args[i]:
                 operation.args[i] = self._replace_variables(operation.args[i])
 
-    def user(self, uid):
-        self.uid = uid
-
-    def _run(self, operation):
+    def _run(self, operation, uid):
         try:
-            os.setuid(self.uid)
-            logger.debug("invoking command %s as uid: %s", operation.command, self.uid)
+            os.setuid(int(uid))
+            logger.debug("invoking command %s as uid: %s", operation.command, uid)
             method = getattr(self, operation.command)
             method_params = inspect.getargspec(method)
             args = []
