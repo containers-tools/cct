@@ -7,7 +7,7 @@ of the MIT license. See the LICENSE file for details.
 """
 
 import logging
-
+import sys
 
 def setup_logging(name="cct", level=logging.DEBUG):
     # create logger
@@ -16,7 +16,7 @@ def setup_logging(name="cct", level=logging.DEBUG):
     logger.setLevel(level)
 
     # create console handler and set level to debug
-    ch = logging.StreamHandler()
+    ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
 
     # create formatter
