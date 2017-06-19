@@ -19,8 +19,6 @@ import subprocess
 import traceback
 import yaml
 
-from pkg_resources import resource_string, resource_filename
-
 from cct.errors import CCTError
 from cct.lib.git import clone_repo, get_tag_or_branch
 
@@ -308,12 +306,6 @@ class Module(object):
 
     def teardown(self):
         pass
-
-    def _get_resource(self, resource):
-        return resource_string(inspect.getmodule(self.__class__).__name__, resource)
-
-    def _get_resource_path(self, resource):
-        return resource_filename(inspect.getmodule(self.__class__).__name__, resource)
 
     def _process_environment(self, operation):
         if '$' in operation.command:
