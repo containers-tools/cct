@@ -1,8 +1,9 @@
 - name: samples.jboss_cli
   description: execute samples jboss_cli steps
+  modules:
+    - url: https://github.com/containers-tools/base
   changes:
     - base.Dummy:
       - dump: data-source remove --name=ExampleDS
     - base.Shell:
-      - url: https://github.com/containers-tools/base
       - shell: ls -l

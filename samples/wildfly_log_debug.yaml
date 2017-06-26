@@ -1,9 +1,0 @@
-- name: samples.xmledit
-  description: change console logging to debug
-  changes:
-    - base.XML:
-      - setup: /opt/jboss/wildfly/standalone/configuration/standalone.xml namespaces=ns:urn:jboss:domain:3.0|lns:urn:jboss:domain:logging:3.0
-      - replace_attribute: >
-          xpath=/ns:server/ns:profile/lns:subsystem/lns:console-handler/lns:level
-          attribute=name
-          value=DEBUG
