@@ -69,7 +69,9 @@ class ChangeProcessor(object):
         for modules in change_cfg['changes']:
             for module_name, operations in modules.items():
                 if module_name not in mr.modules:
-                        raise Exception("Module %s cannot be found" % module_name)
+                    msg = "Module %s cannot be found" % module_name
+                    logger.error(msg)
+                    raise Exception(msg)
                 module = Module(module_name, None, None)
                 module.instance = mr.modules[module_name]
                 module._update_env(change_env)
