@@ -124,9 +124,8 @@ class ModuleManager(object):
         self.modules[name].override = self.override
 
     def check_module_script(self, candidate):
-        module_name = "cct.module." + candidate.split('/')[-1]
-        logger.debug("Importing module %s to %s" % (os.path.abspath(candidate), module_name))
-        name = "%s.%s" % (os.path.dirname(candidate).split('/')[-1], module_name.split('.')[-1])
+        name = "%s.%s" % (os.path.dirname(candidate).split('/')[-1], candidate.split('/')[-1])
+        logger.debug("Importing script from %s to %s" % (os.path.abspath(candidate), name))
         self.modules[name] = ScriptModule(name, os.path.dirname(candidate), self.artifacts_dir)
         self.modules[name].version = self.version
         self.modules[name].override = self.override
