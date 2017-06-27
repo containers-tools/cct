@@ -13,7 +13,8 @@ import os
 import sys
 import urllib2
 
-from cct import setup_logging, version
+
+from cct import setup_logging, version, cfg
 from cct.change_processor import ChangeProcessor
 from cct.module import ModuleManager
 from urlparse import urlparse

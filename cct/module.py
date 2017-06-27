@@ -19,6 +19,7 @@ import subprocess
 import traceback
 import yaml
 
+from cct import cfg
 from cct.errors import CCTError
 from cct.lib.git import clone_repo, get_tag_or_branch
 
@@ -296,9 +297,13 @@ class Module(object):
 
     def _get_artifacts(self, artifacts, destination):
         for artifact in artifacts:
-            cct_artifact = CctArtifact(**artifact)
-            cct_artifact.fetch(destination)
-            self.artifacts[cct_artifact.name] = cct_artifact
+            if cfg.dogen:
+                if artifact not in cfg.artifacts:
+                    cfg.artifacts.append(artifact)
+            else:
+                cct_artifact = CctArtifact(**artifact)
+                cct_artifact.fetch(destination)
+                self.artifacts[cct_artifact.name] = cct_artifact
 
     def setup(self):
         pass
