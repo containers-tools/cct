@@ -91,7 +91,8 @@ class ModuleManager(object):
                 self.check_module_sh(candidate)
         elif 'script' in language:
             for candidate in filter(lambda f: os.path.isdir(os.path.join(directory, f)), os.listdir(directory)):
-                self.check_module_script(os.path.join(directory, candidate))
+                if candidate != '.git':
+                    self.check_module_script(os.path.join(directory, candidate))
         else:
             pattern = os.path.join(os.path.abspath(directory), '*.py')
             for candidate in glob.glob(pattern):
@@ -215,7 +216,7 @@ class ModuleRunner(object):
                 continue
             if operation.command == 'user':
                 logger.info("setting uid to %s" % operation.args[0])
-                self.module.uid=operation.args[0]
+                self.module.uid = operation.args[0]
                 continue
             self.module.instance._process_environment(operation)
             try:
@@ -237,6 +238,7 @@ class ModuleRunner(object):
 
 class Module(object):
     artifacts = {}
+    modules_dirs = {}
 
     def __init__(self, name, directory, artifacts_dir, version=None):
         self.name = name
@@ -251,6 +253,7 @@ class Module(object):
         self.uid = os.getuid()
         if not directory:
             return
+        self.modules_dirs[os.path.splitext(name)[0]] = directory
         with open(os.path.join(directory, "module.yaml")) as stream:
             config = yaml.load(stream)
             if 'artifacts' in config:
@@ -430,7 +433,6 @@ class Operation(object):
 
 
 class ScriptModule(Module):
-    modules_dirs = {}
 
     def __init__(self, name, directory, artifacts_dir):
         Module.__init__(self, name, directory, artifacts_dir)
@@ -439,7 +441,6 @@ class ScriptModule(Module):
         self.names = {}
         for script in filter(lambda f: os.path.isfile(f), glob.glob(pattern)):
             self.names[os.path.basename(script).replace('-', '_').replace('.', '_')] = script
-            self.modules_dirs[os.path.splitext(name)[0]] = os.path.dirname(script)
 
     def __getattr__(self, name):
         def wrapper(*args, **kwargs):
@@ -453,7 +454,7 @@ class ScriptModule(Module):
         cmd = 'bash -x %s %s' % (script, " ".join(args))
         try:
             env = dict(os.environ)
-            mod_dir = os.path.dirname(script)
+            mod_dir = os.path.dirname(os.path.dirname(script))
             env['CCT_MODULE_PATH'] = mod_dir
             logger.info('Created CCT_MODULE_PATH environment variable for module %s' % mod_dir)
 
