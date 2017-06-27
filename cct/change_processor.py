@@ -45,6 +45,8 @@ class ChangeProcessor(object):
         return env_dict
 
     def _process_change(self, change_cfg, fetch_only):
+        if 'name' not in change_cfg:
+            change_cfg['name'] = ''
         logger.info("processing change %s" % change_cfg['name'])
         change_env = self._create_env_dict(change_cfg.get('environment'))
         if 'description' not in change_cfg:
