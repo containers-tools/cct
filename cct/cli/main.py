@@ -32,7 +32,6 @@ class CCT_CLI(object):
         self.parser = MyParser(description='Container configuration tool')
 
     def setup_arguments(self):
-        self.parser.add_argument('--fetch-only', action="store_true", help="cct will fetch modules and artifacts only")
         self.parser.add_argument('--modules-dir', nargs='?', default="%s/%s" % (os.getcwd(), 'modules'), help='directory from where modules are executed')
         self.parser.add_argument('--artifacts-dir', nargs='?', default="%s/%s" % (os.getcwd(), 'artifacts'), help='directory where artifacts are stored')
         self.parser.add_argument('-v', '--verbose', action="store_true", help='verbose output')
@@ -59,10 +58,7 @@ class CCT_CLI(object):
         stream = open(file, 'r')
         return yaml.load(stream)
 
-    def fetch_artifacts(self, changes, modules_dir, artifacts_dir):
-        return self.process_changes(changes, modules_dir, artifacts_dir, True)
-
-    def process_changes(self, changes, modules_dir, artifacts_dir, fetch_only):
+    def process_changes(self, changes, modules_dir, artifacts_dir):
         for change in changes:
             if change is '':
                 continue
@@ -72,7 +68,7 @@ class CCT_CLI(object):
             else:
                 change = self.process_file(change)
             cp = ChangeProcessor(change, modules_dir, artifacts_dir)
-            return cp.process(fetch_only)
+            return cp.process()
 
     def run(self):
         self.setup_arguments()
@@ -110,7 +106,7 @@ class CCT_CLI(object):
             else:
                 changes += args.changes
             try:
-                self.process_changes(changes, args.modules_dir, args.artifacts_dir, args.fetch_only)
+                self.process_changes(changes, args.modules_dir, args.artifacts_dir)
             except KeyboardInterrupt:
                 pass
             except Exception:

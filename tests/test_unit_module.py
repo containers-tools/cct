@@ -45,7 +45,7 @@ class TestModules(unittest.TestCase):
             "artifacts": [
                 {
                     "artifact": url,
-                    "chksum": chksum,
+                    "md5": chksum,
                     "name": "cct",
                 }
             ]
@@ -56,18 +56,18 @@ class TestModules(unittest.TestCase):
 
     def test_artifacts_fetching(self):
         url = "https://github.com/containers-tools/cct/archive/v0.2.0.zip"
-        chksum = "md5:607468ba87490a2b8daa4b6a73168620"
+        chksum = "607468ba87490a2b8daa4b6a73168620"
         self.get_artifact(url, chksum)
 
     def test_artifacts_fetching_wrong_url(self):
         url = "https://github.com/containers-tools/cct/archive/0.0.1.zip33"
-        chksum = "md5:must_be_wrong_too"
+        chksum = "must_be_wrong_too"
         with self.assertRaises(CCTError):
             self.get_artifact(url, chksum)
 
     def test_artifacts_fetching_wrong_chksum(self):
         url = "https://github.com/containers-tools/cct/archive/0.2.0.zip"
-        chksum = "md5:foo"
+        chksum = "foo"
         with self.assertRaises(CCTError):
             self.get_artifact(url, chksum)
 

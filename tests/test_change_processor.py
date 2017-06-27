@@ -50,7 +50,7 @@ class TestModule(unittest.TestCase):
         }]
         destination = tempfile.mkdtemp()
         changeProcessor = ChangeProcessor(config, destination, '/tmp/')
-        changeProcessor.process(fetch_only=False)
+        changeProcessor.process()
         shutil.rmtree(destination)
 
 if __name__ == '__main__':

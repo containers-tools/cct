@@ -385,7 +385,7 @@ class CctArtifact(object):
             if self.hint:
                 raise CCTError('hash is not correct for artifact: "%s". %s' % (self.path, self.hint))
             else:
-                raise CCTError("artifact from %s doesn't match required chksum %s" % (url, self.chksum))
+                raise CCTError("artifact from %s doesn't match required chksum" % url)
 
     def check_sum(self):
         if not os.path.exists(self.path):
