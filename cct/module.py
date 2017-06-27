@@ -344,13 +344,15 @@ class CctArtifact(object):
     """
     Object representing artifact file for changes
     name - name of the file
-    md5sum - md5sum
+    md5 - hash of artifact
+    sha256 - hash of artifact
+    sha1 - has of artifact
     """
-    def __init__(self, name, chksum, artifact="", hint=""):
+    def __init__(self, name, md5=None, sha1=None, sha256=None, artifact="", hint=""):
         self.name = name
-        self.chksum = chksum
-        self.alg = chksum.split(':')[0]
-        self.hash = chksum.split(':')[1]
+        self.sums = {'sha1': sha1,
+                     'sha256': sha256,
+                     'md5': md5}
         self.artifact = self.replace_variables(artifact) if '$' in artifact else artifact
         self.filename = os.path.basename(artifact)
         self.path = None
@@ -398,13 +400,14 @@ class CctArtifact(object):
     def check_sum(self):
         if not os.path.exists(self.path):
             return False
-        hash = getattr(hashlib, self.chksum[:self.chksum.index(':')])()
-        with open(self.path, "rb") as f:
-            for block in iter(lambda: f.read(65536), b""):
-                hash.update(block)
-        if self.chksum[self.chksum.index(':') + 1:] == hash.hexdigest():
-            return True
-        return False
+        for alg, sum in self.sums.items():
+            hash = getattr(hashlib, alg)()
+            with open(self.path, "rb") as f:
+                for block in iter(lambda: f.read(65536), b""):
+                    hash.update(block)
+            if sum is not None and sum != hash.hexdigest():
+                return False
+        return True
 
     def replace_variables(self, string):
         var_regex = re.compile('\$\{.*\}')
