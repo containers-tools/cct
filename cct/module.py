@@ -365,16 +365,6 @@ class CctArtifact(object):
         self.path = os.path.join(directory, self.filename)
 
         url = self.artifact
-        if 'CCT_ARTIFACT_CACHE' in os.environ:
-            cache = os.environ['CCT_ARTIFACT_CACHE']
-            logger.info('Using CCT_ARTIFACT_CACHE=%s to fetch artifact' % cache)
-            for var in [v for v in dir(self) if not callable(getattr(self, v))]:
-                if var.startswith('_'):
-                    continue
-                token = '#%s#' % var
-                cache = cache.replace(token, getattr(self, var))
-            url = cache
-
         if self.check_sum():
             logger.info("Using cached artifact for %s" % self.filename)
             return
