@@ -1,0 +1,275 @@
+= CCT
+David Becvarik, Jonathan Dowland
+:toc:
+
+JBoss OpenShift images tend to be full of complex scripts with wide
+functionality. To lower maintenance costs and *enable code reuse* across
+multiple product teams we developed Containers Configuration Tool (CCT).  CCT
+can be viewed as a simple script manager and launcher. The main components of
+CCT are:
+
+* *Modules* - package of scripts, installation files and all resources
+  needed to configure a feature for an image
+* *Operation* - function/script which is provided by a module
+* *Change* - YAML file which describes which modules are used and which
+  operations are executed to build an image (this is inlined in an image
+  descriptor)
+
+CCT operates in a very simple way:
+
+* Reads the image descriptor
+* Prepares all required modules
+* Execute the specified module's operations
+
+CCT modules
+-----------
+
+CCT modules are packages of scripts and resources for configuring
+containers. Each module in CCT should group similar functionality
+together. Modules are stored in Git repositories.
+
+As an example, you can define a sample Jolokia module which provides
+the following operations:
+
+* Install jolokia
+* Setup jolokia for JBoss EAP
+//* …
+
+CCT modules can be implemented in Python, bash or both.
+
+Every CCT module contains a module descriptor (`module.yaml`) which is
+located in the modules' directory and this directory is used as a *module
+name*. For example, if you have a "os-jolokia" module, it'll be located
+in the
+link:https://github.com/jboss-openshift/os-jolokia[os-jolokia/ directory].
+
+[source,yaml]
+----
+description: Jolokia Module
+language:
+    - script
+artifacts:
+  - name: jolokia
+    md5: 240381af7039461f3472b7796fe9cd4b
+    artifact: jolokia-jvm-1.3.5.redhat-1-agent.jar
+    hint: “You can download this artifact from...“
+dependencies:
+  - url: https://github.com/containers-tools/...
+    version: master    
+----
+
+The important parts are:
+
+* *language* - list of languages for specific module (script, Python)
+* *artifacts* - contains a list of artifacts which are required by the module
+* *dependencies* - contains a list of URLs to the Git repositories of other CCT
+  modules which this module extends/requires for running.
+
+Script modules
+~~~~~~~~~~~~~~
+
+Script modules are the most straightforward way to use CCT. It enables
+you to use your existing bash scripts as CCT modules with the possibility of
+continuously enhancing them with CCT perks (dependencies, artifacts, etc.)
+
+See the https://github.com/jboss-openshift/os-jolokia[os-jolokia] module as an
+example of a script module. You can see it contains the following `module.yaml`
+that introduces the module and its artifacts to CCT:
+
+[source,yaml]
+----
+description: Module for installing jolokia in JBoss OpenShift images
+language:
+ - script
+artifacts:
+ - name: jolokia
+   artifact: https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
+   md5: 75e5b5ba0b804cd9def9f20a70af649f
+----
+
+You can also see that the module repository contains the following
+directories:
+
+* amq
+* eap
+* java
+* jws
+
+This is important and shows you how you can group similar
+functionalities to packages inside the module. This enables you to have
+multiple ways of installing jolokia inside the JBoss OpenShift images
+(which is slightly different for every product family).
+
+If you look for example inside the *eap* directory you will find a script called
+https://github.com/dbecvarik/os-jolokia/blob/master/eap/install[install].
+This is executed by the following CCT change:
+
+[source,yaml]
+----
+ - modules:
+   - url: https://github.com/jboss-openshift/os-jolokia
+ - changes:
+   - os-jolokia.eap:
+     - install:
+----
+
+From the above you can see that CCT script modules are invoked
+in the following way:
+
+[source,yaml]
+----
+ - <module>.<package>
+   - <operation>
+----
+
+Where:
+
+* *Module* - is the name of a directory containing `module.yaml`
+* *Package* - are all the directories which are siblings of `module.yaml`
+* *Operation* - The script inside the package's directories to execute
+
+Versioning (branching)
+~~~~~~~~~~~~~~~~~~~~~~
+
+CCT is using Git for module storage, and modules are versioned via Git.
+As a module version you can use:
+
+* Tag
+* Branch
+* Commit id
+
+The preferred way to version modules is to use branches. Each module should
+provide a development branch.
+
+The required module version can be requested via the *version* keyword in the 
+change section of a YAML file as follows:
+
+[source,yaml]
+----
+ - modules:
+   - url: https://github.com/jboss-openshift/os-jolokia
+   - version: 1.2.3
+----
+
+NOTE: If you skip version in module section, *master* is used as a default
+version.
+
+Artifacts
+~~~~~~~~~
+
+In CCT every module can define *artifacts*. Artifacts are a resource which the
+module needs to use to successfully introduce its features. You can imagine
+an artifact as a JAR file, installer or any other resource which is too
+big to be committed and versioned in the module's Git repository. Artifacts
+are defined in the *artifacts* section of module descriptor.
+
+[source,yaml]
+----
+artifacts:
+  - name: jolokia
+    artifact: jolokia-jvm-1.3.6.redhat-1-agent.jar
+    md5: 75e5b5ba0b804cd9def9f20a70af649f
+    hint: Download it from https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
+----
+
+Artifact variables
+^^^^^^^^^^^^^^^^^^
+
+Each artifact defined in `module.yaml` is accessible to scripts via environment
+variables of the form `CCT_ARTIFACT_PATH_<NAME>`.
+
+For example, the artifact defined in the module descriptor above will be
+available as `CCT_ARTIFACT_PATH_JOLOKIA`.
+
+Module environment variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To make CCT modules easier to develop, CCT defines several environment
+variables.
+
+Every shell/script CCT module introduces its file system path via the
+variable `CCT_MODULE_PATH_MODULE_<NAME>`.
+
+There is also a special variable `CCT_MODULE_PATH` which points to the
+current module path.
+
+==== Example
+
+If you have CCT module named `os-jolokia` its location will be
+available via variable `CCT_MODULE_PATH_OS_JOLOKIA`.
+
+Module dependencies
+~~~~~~~~~~~~~~~~~~~
+
+To have better code reuse across multiple product/teams, modules can
+require another module as a dependency.
+
+A dependent module is fetched and made available to use, but no code
+from the dependent modules is run automatically. The depending module
+is responsible for using code or artifacts from its dependencies.
+
+==== Example
+
+We have a Dummy module which is using the `os-jolokia` module as a dependency:
+
+[source,yaml]
+----
+description: Dummy Module
+language:
+    - script
+dependencies:
+  - url: https://github.com/jboss-openshift/os-jolokia
+    version: master    
+----
+
+When you use the Dummy module CCT will also fetch the
+master version of the `os-jolokia` module. CCT will also define the following
+environment variables which would be available for use in the Dummy module:
+
+* `CCT_ARTIFACT_PATH_JOLOKIA` - contains path to a `jolokia.jar` from
+   the dependency module
+* `CCT_MODULE_PATH_MODULE_OS_JOLOKIA` - contains path to the root of the
+   `os-jolokia` module (the directory containing `module.yaml`)
+
+Dogen integration
+~~~~~~~~~~~~~~~~~
+
+Dogen now supports new versions of CCT with bash modules support. To make
+CCT and Dogen talk together you need to place a "cct" configuration section
+in your Dogen `image.yaml` in the following format:
+
+[source,yaml]
+----
+name: "testimage"
+description: "..."
+version: "1.0"
+release: "dev"
+user: 185
+from: "jboss-base-7/jdk8:1.3"
+envs:
+  - name: MAVEN_VERSION
+    value: "3.3.9-2.8.el7"
+...
+labels:
+    - name: "io.openshift.s2i.scripts-url"
+      value: "image:///usr/local/s2i"
+...
+cmd:
+ - "/usr/local/s2i/run"
+ports:
+ - value: 8080
+cct:
+    verbose: 1
+    configure:
+     - modules:
+        - url: https://github.com/jboss-openshift/os-jolokia
+      - changes:
+         - os-jolokia.java:
+            - install:
+----
+
+Module development best practices
+---------------------------------
+
+1.  Create modules around artifacts
+
