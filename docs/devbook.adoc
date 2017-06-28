@@ -80,11 +80,11 @@ that introduces the module and its artifacts to CCT:
 ----
 description: Module for installing jolokia in JBoss OpenShift images
 language:
- - script
+  - script
 artifacts:
- - name: jolokia
-   artifact: https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
-   md5: 75e5b5ba0b804cd9def9f20a70af649f
+  - name: jolokia
+    artifact: https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
+    md5: 75e5b5ba0b804cd9def9f20a70af649f
 ----
 
 You can also see that the module repository contains the following
@@ -106,11 +106,11 @@ This is executed by the following CCT change:
 
 [source,yaml]
 ----
- - modules:
-   - url: https://github.com/jboss-openshift/os-jolokia
- - changes:
-   - os-jolokia.eap:
-     - install:
+  - modules:
+    - url: https://github.com/jboss-openshift/os-jolokia
+    changes:
+    - os-jolokia.eap:
+      - install:
 ----
 
 From the above you can see that CCT script modules are invoked
@@ -118,8 +118,8 @@ in the following way:
 
 [source,yaml]
 ----
- - <module>.<package>
-   - <operation>
+  -  <module>.<package>
+     - <operation>
 ----
 
 Where:
@@ -146,9 +146,9 @@ change section of a YAML file as follows:
 
 [source,yaml]
 ----
- - modules:
-   - url: https://github.com/jboss-openshift/os-jolokia
-   - version: 1.2.3
+  - modules:
+    - url: https://github.com/jboss-openshift/os-jolokia
+    - version: 1.2.3
 ----
 
 NOTE: If you skip version in module section, *master* is used as a default
@@ -166,10 +166,10 @@ are defined in the *artifacts* section of module descriptor.
 [source,yaml]
 ----
 artifacts:
-  - name: jolokia
-    artifact: jolokia-jvm-1.3.6.redhat-1-agent.jar
-    md5: 75e5b5ba0b804cd9def9f20a70af649f
-    hint: Download it from https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
+  - name: jolokia
+    artifact: jolokia-jvm-1.3.6.redhat-1-agent.jar
+    md5: 75e5b5ba0b804cd9def9f20a70af649f
+    hint: Download it from https://maven.repository.redhat.com/ga/org/jolokia/jolokia-jvm/1.3.6.redhat-1/jolokia-jvm-1.3.6.redhat-1-agent.jar
 ----
 
 Artifact variables
@@ -216,10 +216,10 @@ We have a Dummy module which is using the `os-jolokia` module as a dependency:
 ----
 description: Dummy Module
 language:
-    - script
+  - script
 dependencies:
-  - url: https://github.com/jboss-openshift/os-jolokia
-    version: master    
+  - url: https://github.com/jboss-openshift/os-jolokia
+    version: master
 ----
 
 When you use the Dummy module CCT will also fetch the
@@ -234,9 +234,16 @@ environment variables which would be available for use in the Dummy module:
 Dogen integration
 ~~~~~~~~~~~~~~~~~
 
-Dogen now supports new versions of CCT with bash modules support. To make
-CCT and Dogen talk together you need to place a "cct" configuration section
-in your Dogen `image.yaml` in the following format:
+Dogen now supports new versions of CCT with bash modules support. To make CCT
+and dogen works together you need to:
+
+* inline CCT change into "cct" keyword of image descritor
+* configure CCT in "dogen.plugins.cct" section, possble options are:
+** *user* - specify user in which context CCT is executed
+** *verbose* - Specify "true" if you want CCT to be more verbose (DEBUG)
+** *version* - version of CCT to use (dogen has a reasonable default)
+
+Example of CCT enabled Dogen `image.yaml`:
 
 [source,yaml]
 ----
@@ -247,25 +254,28 @@ release: "dev"
 user: 185
 from: "jboss-base-7/jdk8:1.3"
 envs:
-  - name: MAVEN_VERSION
-    value: "3.3.9-2.8.el7"
+  - name: MAVEN_VERSION
+    value: "3.3.9-2.8.el7"
 ...
 labels:
-    - name: "io.openshift.s2i.scripts-url"
-      value: "image:///usr/local/s2i"
+  - name: "io.openshift.s2i.scripts-url"
+    value: "image:///usr/local/s2i"
 ...
 cmd:
- - "/usr/local/s2i/run"
+  - "/usr/local/s2i/run"
 ports:
- - value: 8080
+  - value: 8080
 cct:
-    verbose: 1
-    configure:
-     - modules:
-        - url: https://github.com/jboss-openshift/os-jolokia
-      - changes:
-         - os-jolokia.java:
-            - install:
+  - name: Jolokia
+    modules:
+    - url: https://github.com/jboss-openshift/os-jolokia
+    changes:
+    - os-jolokia.java:
+      - install:
+dogen:
+  plugins:
+    cct:
+      verbose: true
 ----
 
 Module development best practices
