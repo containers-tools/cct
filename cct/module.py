@@ -175,7 +175,7 @@ class ModuleManager(object):
 
         for method in dir(module):
             if callable(getattr(module, method)):
-                if method[0] in string.ascii_lowercase and method not in ['run', 'setup', 'teardown']:
+                if method[0] in string.ascii_lowercase and method not in ['setup', 'teardown']:
                     print("  %s: %s" % (method, getattr(module, method).__doc__))
 
         if getattr(module, "teardown").__doc__:
@@ -212,7 +212,7 @@ class ModuleRunner(object):
     def run(self):
         self.module.instance.setup()
         for operation in self.module.operations:
-            if operation.command in ['setup', 'run', 'teardown']:
+            if operation.command in ['setup', 'teardown']:
                 continue
             if operation.command == 'user':
                 logger.info("setting uid to %s" % operation.args[0])
