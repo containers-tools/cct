@@ -83,8 +83,6 @@ class ChangeProcessor(object):
             runner.run()
         except:
             raise
-        finally:
-            runner.print_result_report()
 
 
 class Change(object):
@@ -114,9 +112,3 @@ class ChangeRunner(object):
                 logger.error("module %s failed processing steps" % module.name)
                 self.results.append(module)
                 raise
-
-    def print_result_report(self):
-        for module in self.results:
-            print("Processed module: %s" % module.name)
-            for operation in module.operations:
-                print("  %-30s: %s" % (operation.command, operation.state))
