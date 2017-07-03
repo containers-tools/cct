@@ -19,7 +19,7 @@ from cct.module import ModuleManager
 
 from urlparse import urlparse
 from pykwalify.core import Core
-from pykwalify.errors import SchemaError\
+from pykwalify.errors import SchemaError
 
 logger = logging.getLogger('cct')
 

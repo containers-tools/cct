@@ -55,7 +55,7 @@ class TestModules(unittest.TestCase):
         os.remove(module.artifacts['cct'].path)
 
     def test_artifacts_fetching(self):
-        url = "https://github.com/containers-tools/cct/archive/v0.2.0.zip"
+        url = "https://github.com/containers-tools/cct/archive/0.2.0.zip"
         chksum = "607468ba87490a2b8daa4b6a73168620"
         self.get_artifact(url, chksum)
 
