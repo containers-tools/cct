@@ -1,0 +1,24 @@
+# This is a Kwalify Schema, see http://pykwalify.readthedocs.io/ for more information
+sequence:
+- mapping:
+    name: {type: str, required: True}
+    description: {type: str}
+    environment:
+      mapping:
+        =: {type: str}
+    modules:
+      sequence:
+        - mapping:
+            url: {type: str, required: True}
+            version: {type: str}
+    changes:
+      sequence:
+      - mapping:
+          =:
+           sequence:
+           - mapping:
+               =:
+                 type: str
+
+
+

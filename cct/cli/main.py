@@ -8,16 +8,19 @@ of the MIT license. See the LICENSE file for details.
 
 import argparse
 import logging
-import yaml
 import os
 import sys
 import urllib2
+import yaml
 
-
-from cct import setup_logging, version, cfg
+from cct import setup_logging, version
 from cct.change_processor import ChangeProcessor
 from cct.module import ModuleManager
+
 from urlparse import urlparse
+from pykwalify.core import Core
+from pykwalify.errors import SchemaError\
+
 logger = logging.getLogger('cct')
 
 
@@ -60,6 +63,9 @@ class CCT_CLI(object):
         return yaml.load(stream)
 
     def process_changes(self, changes, modules_dir, artifacts_dir):
+        schema_path = os.path.join(os.path.dirname(__file__), '..', 'schema.yaml')
+        with open(schema_path, 'r') as fh:
+            schema = yaml.safe_load(fh)
         for change in changes:
             if change is '':
                 continue
@@ -68,6 +74,13 @@ class CCT_CLI(object):
                 change = self.process_url(change)
             else:
                 change = self.process_file(change)
+
+            c = Core(source_data=change, schema_data=schema)
+            try:
+                c.validate(raise_exception=True)
+            except SchemaError as e:
+                logger.error('CCT change viloates schema, %s', e)
+                raise e
             cp = ChangeProcessor(change, modules_dir, artifacts_dir)
             return cp.process()
 
