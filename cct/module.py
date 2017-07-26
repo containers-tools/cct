@@ -67,7 +67,6 @@ class ModuleManager(object):
         repo_dir = "%s/%s" % (self.directory, os.path.basename(url))
         if repo_dir.endswith('git'):
             repo_dir = repo_dir[:-4]
-        logger.info("Cloning module into %s" % repo_dir)
         clone_repo(url, repo_dir, self.version, self.override)
         self.discover_modules(repo_dir)
 
