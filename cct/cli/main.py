@@ -9,6 +9,7 @@ of the MIT license. See the LICENSE file for details.
 import argparse
 import logging
 import os
+import pkgutil
 import sys
 import urllib2
 import yaml
@@ -63,9 +64,7 @@ class CCT_CLI(object):
         return yaml.load(stream)
 
     def process_changes(self, changes, modules_dir, artifacts_dir):
-        schema_path = os.path.join(os.path.dirname(__file__), '..', 'schema.yaml')
-        with open(schema_path, 'r') as fh:
-            schema = yaml.safe_load(fh)
+        schema = yaml.safe_load(pkgutil.get_data('cct', 'schema.yaml'))
         for change in changes:
             if change is '':
                 continue
