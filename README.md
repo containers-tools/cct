@@ -1,3 +1,5 @@
+# Deprecated
+This tool is deprecated you should use [Concreate](https://github.com/jboss-container-images/concreate) instead.
 # CCT
 containers configuration tool
 
